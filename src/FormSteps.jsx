@@ -1,0 +1,783 @@
+// FormSteps.jsx — Multi-step form (Step 1-6)
+import React from 'react'
+import { BLANK_ACHIEVEMENT, BLANK_ORG } from './FormState.jsx'
+import { IFile, IAlert, IPlus, ITrash } from './Icons.jsx'
+import { Button, Field, Input, Textarea, Select, Checkbox } from './Primitives.jsx'
+import { useFormConfig } from './lib/FormConfigContext.jsx'
+
+const GENDER_OPTS = ['Laki-laki', 'Perempuan']
+
+function StepContainer({ title, subtitle, children }) {
+  return (
+    <>
+      <div>
+        <h2>{title}</h2>
+        {subtitle && <div className="form-section-sub">{subtitle}</div>}
+      </div>
+      {children}
+    </>
+  )
+}
+
+function Step1DataPribadi({ form, setField, errors, mobile }) {
+  const photoInputRef = React.useRef(null)
+  const handlePhoto = (f) => {
+    if (!f) return
+    if (f.size > 5_000_000) return alert('Ukuran foto maksimal 5 MB.')
+    setField('photoFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
+  }
+
+  const [provinces, setProvinces] = React.useState([])
+  const [regencies, setRegencies] = React.useState([])
+  const [districts, setDistricts] = React.useState([])
+  const [provinceId, setProvinceId] = React.useState('')
+  const [regencyId, setRegencyId] = React.useState('')
+
+  React.useEffect(() => {
+    fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json')
+      .then(r => r.json()).then(setProvinces).catch(() => {})
+  }, [])
+
+  React.useEffect(() => {
+    if (!provinces.length || !form.domisiliProvinsi) return
+    const p = provinces.find(p => p.name === form.domisiliProvinsi)
+    if (p && p.id !== provinceId) setProvinceId(p.id)
+  }, [provinces, form.domisiliProvinsi])
+
+  React.useEffect(() => {
+    if (!provinceId) { setRegencies([]); return }
+    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`)
+      .then(r => r.json()).then(setRegencies).catch(() => {})
+  }, [provinceId])
+
+  React.useEffect(() => {
+    if (!regencies.length || !form.domisiliKota) return
+    const r = regencies.find(r => r.name === form.domisiliKota)
+    if (r && r.id !== regencyId) setRegencyId(r.id)
+  }, [regencies, form.domisiliKota])
+
+  React.useEffect(() => {
+    if (!regencyId) { setDistricts([]); return }
+    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${regencyId}.json`)
+      .then(r => r.json()).then(setDistricts).catch(() => {})
+  }, [regencyId])
+
+  return (
+    <StepContainer title="Data pribadi" subtitle="Isi identitas Anda sesuai KTP/KK.">
+      <div style={{ marginBottom: 24 }}>
+        <input type="file" ref={photoInputRef} accept="image/*" style={{ display: 'none' }} onChange={(e) => handlePhoto(e.target.files[0])} />
+        <Field label="Pas Foto Profil (Wajib)" required error={errors.photoFile} hint="Tampilkan wajah jelas. Rasio 3:4 atau 4:6 (Maks 5MB)">
+          <div style={{ display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'flex-start' : 'center', gap: 16 }}>
+            <div style={{ width: 64, height: 64, borderRadius: 32, background: 'var(--ink-100)', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--ink-200)' }}>
+              {form.photoFile && form.photoFile.url ? <img src={form.photoFile.url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+            </div>
+            <div style={{ flex: 1 }}>
+              <Button variant="outline-tosca" size="sm" onClick={() => photoInputRef.current.click()}>Pilih Foto</Button>
+              {form.photoFile && <div style={{ fontSize: 12, marginTop: 6, color: 'var(--ink-500)' }}>{form.photoFile.name}</div>}
+            </div>
+          </div>
+        </Field>
+      </div>
+
+      <Field label="Nama lengkap" required error={errors.fullName}>
+        <Input value={form.fullName} error={errors.fullName} onChange={(e) => setField('fullName', e.target.value)} placeholder="Sesuai KTP/KK" />
+      </Field>
+      <Field label="Nama panggilan" required error={errors.nickname}>
+        <Input value={form.nickname || ''} error={errors.nickname} onChange={(e) => setField('nickname', e.target.value)} placeholder="Nama yang biasa dipakai sehari-hari" />
+      </Field>
+      <div className="form-grid-2">
+        <Field label="Nomor Induk Kependudukan (NIK)" required error={errors.nik}>
+          <Input inputMode="numeric" maxLength={16} value={form.nik} error={errors.nik}
+            onChange={(e) => setField('nik', e.target.value.replace(/\D/g, ''))} placeholder="16 digit" />
+        </Field>
+        <Field label="No. Kartu Keluarga (KK)" required error={errors.noKK}>
+          <Input inputMode="numeric" maxLength={16} value={form.noKK} error={errors.noKK}
+            onChange={(e) => setField('noKK', e.target.value.replace(/\D/g, ''))} placeholder="16 digit" />
+        </Field>
+      </div>
+      <div className="form-grid-2">
+        <Field label="Tempat lahir" required error={errors.birthPlace}>
+          <Input value={form.birthPlace} error={errors.birthPlace} onChange={(e) => setField('birthPlace', e.target.value)} placeholder="Kota/Kabupaten" />
+        </Field>
+        <Field label="Tanggal lahir" required error={errors.birthDate}>
+          <Input type="date" value={form.birthDate} error={errors.birthDate} onChange={(e) => setField('birthDate', e.target.value)} />
+        </Field>
+      </div>
+      <Field label="Jenis kelamin" required error={errors.gender}>
+        <Select value={form.gender} error={errors.gender} onChange={(e) => setField('gender', e.target.value)}>
+          <option value="">Pilih…</option>
+          {GENDER_OPTS.map((g) => <option key={g} value={g}>{g}</option>)}
+        </Select>
+      </Field>
+      <Field label="Email" required error={errors.email}>
+        <Input type="email" value={form.email || ''} error={errors.email} onChange={(e) => setField('email', e.target.value)} placeholder="contoh@email.com" />
+      </Field>
+      <Field label="Nomor handphone (WhatsApp aktif)" required error={errors.phone}>
+        <Input type="tel" value={form.phone} error={errors.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="08xx-xxxx-xxxx" />
+      </Field>
+      <Field label="Link Instagram" required error={errors.instagram} hint="Contoh: https://instagram.com/namaanda">
+        <Input type="url" value={form.instagram || ''} error={errors.instagram}
+          onChange={(e) => setField('instagram', e.target.value)} placeholder="https://instagram.com/namaanda" />
+      </Field>
+      <Field label="Domisili Provinsi" required error={errors.domisiliProvinsi}>
+        <Select value={form.domisiliProvinsi || ''} error={errors.domisiliProvinsi} onChange={(e) => {
+          const p = provinces.find(p => p.name === e.target.value)
+          setProvinceId(p?.id || '')
+          setRegencyId('')
+          setField('domisiliProvinsi', e.target.value)
+          setField('domisiliKota', '')
+          setField('domisiliKecamatan', '')
+        }}>
+          <option value="">{provinces.length ? 'Pilih provinsi…' : 'Memuat…'}</option>
+          {provinces.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+        </Select>
+      </Field>
+      <Field label="Domisili Kabupaten/Kota" required error={errors.domisiliKota}>
+        <Select value={form.domisiliKota || ''} error={errors.domisiliKota}
+          disabled={!form.domisiliProvinsi}
+          onChange={(e) => {
+            const r = regencies.find(r => r.name === e.target.value)
+            setRegencyId(r?.id || '')
+            setField('domisiliKota', e.target.value)
+            setField('domisiliKecamatan', '')
+          }}>
+          <option value="">{!form.domisiliProvinsi ? 'Pilih provinsi dulu…' : regencies.length ? 'Pilih kabupaten/kota…' : 'Memuat…'}</option>
+          {regencies.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+        </Select>
+      </Field>
+      <Field label="Domisili Kecamatan" required error={errors.domisiliKecamatan}>
+        <Select value={form.domisiliKecamatan || ''} error={errors.domisiliKecamatan}
+          disabled={!form.domisiliKota}
+          onChange={(e) => setField('domisiliKecamatan', e.target.value)}>
+          <option value="">{!form.domisiliKota ? 'Pilih kabupaten/kota dulu…' : districts.length ? 'Pilih kecamatan…' : 'Memuat…'}</option>
+          {districts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+        </Select>
+      </Field>
+      <Field label="Alamat domisili lengkap" required error={errors.address}>
+        <Textarea value={form.address} error={errors.address} onChange={(e) => setField('address', e.target.value)}
+          placeholder="Contoh: Jl. Melati No. 12 RT 03/RW 02, Desa Sukamaju, Kec. Ciawi, Kab. Bogor, Jawa Barat" />
+      </Field>
+    </StepContainer>
+  )
+}
+
+const MARITAL_OPTS   = ['Menikah', 'Bercerai']
+const CONDITION_OPTS = ['Hidup', 'Wafat']
+
+function SectionHeader({ title }) {
+  return (
+    <h3 style={{ fontSize: 13, color: 'var(--tosca-700)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+      {title}
+      <div style={{ flex: 1, height: 1, background: 'var(--ink-100)' }} />
+    </h3>
+  )
+}
+
+function Step2Keluarga({ form, setField, errors, mobile }) {
+  const { config } = useFormConfig()
+  const jobOpts = config.job_options || []
+
+  const kkInputRef = React.useRef(null)
+  const [kkFileError, setKkFileError] = React.useState(null)
+
+  const handleKK = (f) => {
+    if (!f) return
+    if (f.size > 2_000_000) { setKkFileError('Ukuran file melebihi 2 MB.'); return }
+    setKkFileError(null)
+    setField('kkFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
+  }
+  const removeKK = () => { setField('kkFile', null); setKkFileError(null); if (kkInputRef.current) kkInputRef.current.value = '' }
+  const isImage = (file) => file && /\.(jpg|jpeg|png)$/i.test(file.name)
+
+  return (
+    <StepContainer title="Data keluarga" subtitle="Informasi orang tua/wali, digunakan untuk verifikasi kondisi sosial-ekonomi keluarga.">
+
+      {/* Status pernikahan */}
+      <Field label="Status Pernikahan Orangtua" required error={errors.familyStatus}>
+        <Select value={form.familyStatus} error={errors.familyStatus} onChange={(e) => setField('familyStatus', e.target.value)}>
+          <option value="">Pilih…</option>
+          {MARITAL_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+        </Select>
+      </Field>
+
+      {/* ── Informasi Ayah ── */}
+      <div style={{ marginTop: 24 }}>
+        <SectionHeader title="Informasi Ayah" />
+        <div className="form-grid-2">
+          <Field label="Nama ayah" required error={errors.fatherName}>
+            <Input value={form.fatherName} error={errors.fatherName}
+              onChange={(e) => setField('fatherName', e.target.value)} placeholder="Nama lengkap ayah" />
+          </Field>
+          <Field label="Kondisi" required error={errors.fatherCondition}>
+            <Select value={form.fatherCondition} error={errors.fatherCondition} onChange={(e) => {
+              const v = e.target.value
+              setField('fatherCondition', v)
+              if (v === 'Wafat') { setField('fatherJob', 'Tidak Bekerja'); setField('fatherJobOther', '') }
+              else               { setField('fatherJob', '') }
+            }}>
+              <option value="">Pilih…</option>
+              {CONDITION_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+            </Select>
+          </Field>
+        </div>
+        {form.fatherCondition === 'Wafat' ? (
+          <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--ink-50)', border: '1px solid var(--ink-200)', fontSize: 13, color: 'var(--ink-500)' }}>
+            Pekerjaan otomatis: <strong>Tidak Bekerja</strong>
+          </div>
+        ) : (
+          <>
+            <Field label="Pekerjaan" required={!!form.fatherCondition} error={errors.fatherJob}>
+              <Select value={form.fatherJob} error={errors.fatherJob} onChange={(e) => {
+                const v = e.target.value
+                setField('fatherJob', v)
+                if (v !== 'Lainnya') setField('fatherJobOther', '')
+              }}>
+                <option value="">Pilih…</option>
+                {jobOpts.map((j) => <option key={j} value={j}>{j}</option>)}
+              </Select>
+            </Field>
+            {form.fatherJob === 'Lainnya' && (
+              <div style={{ marginTop: 14, animation: 'fadeUp .2s ease' }}>
+                <Field label="Tuliskan pekerjaan lainnya" required error={errors.fatherJobOther}>
+                  <Input value={form.fatherJobOther || ''} error={errors.fatherJobOther}
+                    onChange={(e) => setField('fatherJobOther', e.target.value)} placeholder="Contoh: Tukang Las" />
+                </Field>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── Informasi Ibu ── */}
+      <div style={{ marginTop: 28 }}>
+        <SectionHeader title="Informasi Ibu" />
+        <div className="form-grid-2">
+          <Field label="Nama ibu" required error={errors.motherName}>
+            <Input value={form.motherName} error={errors.motherName}
+              onChange={(e) => setField('motherName', e.target.value)} placeholder="Nama lengkap ibu" />
+          </Field>
+          <Field label="Kondisi" required error={errors.motherCondition}>
+            <Select value={form.motherCondition} error={errors.motherCondition} onChange={(e) => {
+              const v = e.target.value
+              setField('motherCondition', v)
+              if (v === 'Wafat') { setField('motherJob', 'Tidak Bekerja'); setField('motherJobOther', '') }
+              else               { setField('motherJob', '') }
+            }}>
+              <option value="">Pilih…</option>
+              {CONDITION_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+            </Select>
+          </Field>
+        </div>
+        {form.motherCondition === 'Wafat' ? (
+          <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--ink-50)', border: '1px solid var(--ink-200)', fontSize: 13, color: 'var(--ink-500)' }}>
+            Pekerjaan otomatis: <strong>Tidak Bekerja</strong>
+          </div>
+        ) : (
+          <>
+            <Field label="Pekerjaan" required={!!form.motherCondition} error={errors.motherJob}>
+              <Select value={form.motherJob} error={errors.motherJob} onChange={(e) => {
+                const v = e.target.value
+                setField('motherJob', v)
+                if (v !== 'Lainnya') setField('motherJobOther', '')
+              }}>
+                <option value="">Pilih…</option>
+                {jobOpts.map((j) => <option key={j} value={j}>{j}</option>)}
+              </Select>
+            </Field>
+            {form.motherJob === 'Lainnya' && (
+              <div style={{ marginTop: 14, animation: 'fadeUp .2s ease' }}>
+                <Field label="Tuliskan pekerjaan lainnya" required error={errors.motherJobOther}>
+                  <Input value={form.motherJobOther || ''} error={errors.motherJobOther}
+                    onChange={(e) => setField('motherJobOther', e.target.value)} placeholder="Contoh: Penjahit" />
+                </Field>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── Informasi Wali (Opsional) ── */}
+      <div style={{ marginTop: 28 }}>
+        <SectionHeader title="Informasi Wali (Opsional)" />
+        <div className="form-grid-2">
+          <Field label="Nama wali">
+            <Input value={form.guardianName || ''} onChange={(e) => setField('guardianName', e.target.value)} placeholder="Nama lengkap wali" />
+          </Field>
+          <Field label="Pekerjaan wali">
+            <Select value={form.guardianJob || ''} onChange={(e) => {
+              const v = e.target.value
+              setField('guardianJob', v)
+              if (v !== 'Lainnya') setField('guardianJobOther', '')
+            }}>
+              <option value="">Pilih…</option>
+              {jobOpts.map((j) => <option key={j} value={j}>{j}</option>)}
+            </Select>
+          </Field>
+        </div>
+        {form.guardianJob === 'Lainnya' && (
+          <div style={{ marginTop: 14, animation: 'fadeUp .2s ease' }}>
+            <Field label="Tuliskan pekerjaan wali">
+              <Input value={form.guardianJobOther || ''} onChange={(e) => setField('guardianJobOther', e.target.value)} placeholder="Contoh: Petani" />
+            </Field>
+          </div>
+        )}
+      </div>
+
+      {/* ── Kartu Keluarga ── */}
+      <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px dashed var(--ink-200)' }}>
+        <Field label="Kartu Keluarga (KK)" required error={errors.kkFile || kkFileError}>
+          <input type="file" ref={kkInputRef} accept=".pdf,.jpg,.jpeg,.png"
+            style={{ display: 'none' }} onChange={(e) => handleKK(e.target.files[0])} />
+          {!form.kkFile ? (
+            <div className="upload-well" onClick={() => kkInputRef.current.click()}
+              style={{ cursor: 'pointer', borderColor: errors.kkFile ? 'var(--danger-500)' : undefined }}>
+              <div className="uw-icon"><IFile size={20} /></div>
+              <div style={{ flex: 1 }}>
+                <div className="uw-title">Unggah Kartu Keluarga</div>
+                <div className="uw-sub">PDF/JPG/PNG · maks 2 MB</div>
+              </div>
+              <Button variant="outline-tosca" size="sm"
+                onClick={(e) => { e.stopPropagation(); kkInputRef.current.click() }}>Pilih file</Button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+              {isImage(form.kkFile) ? (
+                <img src={form.kkFile.url} alt="KK preview"
+                  style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ink-200)', flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 120, height: 80, borderRadius: 8, background: 'var(--ink-50)', border: '1px solid var(--ink-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <IFile size={28} style={{ color: 'var(--tosca-600)' }} />
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.kkFile.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.kkFile.size / 1024).toFixed(0)} KB</div>
+                <Button variant="ghost" size="sm" style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+                  onClick={removeKK}>Hapus</Button>
+              </div>
+            </div>
+          )}
+        </Field>
+      </div>
+
+    </StepContainer>
+  )
+}
+
+
+function NumberStepper({ value, onChange, min = 0, max = 10 }) {
+  const n = parseInt(value) || 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <button type="button" onClick={() => onChange(Math.max(min, n - 1))} disabled={n <= min}
+        style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--ink-200)', background: n <= min ? 'var(--ink-50)' : 'white', cursor: n <= min ? 'not-allowed' : 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: n <= min ? 'var(--ink-300)' : 'var(--ink-700)', flexShrink: 0 }}>
+        −
+      </button>
+      <span style={{ minWidth: 28, textAlign: 'center', fontWeight: 700, fontSize: 16 }}>{n}</span>
+      <button type="button" onClick={() => onChange(Math.min(max, n + 1))} disabled={n >= max}
+        style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--ink-200)', background: n >= max ? 'var(--ink-50)' : 'white', cursor: n >= max ? 'not-allowed' : 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: n >= max ? 'var(--ink-300)' : 'var(--ink-700)', flexShrink: 0 }}>
+        +
+      </button>
+    </div>
+  )
+}
+
+function StepperRow({ label, value, onChange, min = 0, max = 10, auto, autoValue }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 0', borderBottom: '1px solid var(--ink-100)' }}>
+      <div>
+        <span style={{ fontSize: 14, color: 'var(--ink-800)' }}>{label}</span>
+        {auto && <span style={{ fontSize: 11, marginLeft: 6, color: 'var(--tosca-600)', fontWeight: 600 }}>otomatis</span>}
+      </div>
+      {auto
+        ? <span style={{ fontWeight: 700, fontSize: 16, minWidth: 34, textAlign: 'center', color: 'var(--ink-700)' }}>{autoValue}</span>
+        : <NumberStepper value={value} onChange={onChange} min={min} max={max} />
+      }
+    </div>
+  )
+}
+
+function RpInput({ value, onChange, error, placeholder = 'Rp 0' }) {
+  const raw = String(value || '').replace(/\D/g, '')
+  const display = raw ? 'Rp ' + parseInt(raw, 10).toLocaleString('id-ID') : ''
+  return (
+    <input className={`input${error ? ' input-error' : ''}`} type="text" inputMode="numeric"
+      value={display} placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))} />
+  )
+}
+
+const PROVIDER_OPTS    = ['Ayah & Ibu', 'Ayah Saja', 'Ibu Saja', 'Wali']
+const HOUSE_STATUS_OPTS = ['Milik sendiri', 'Sewa/Kontrak', 'Menumpang Keluarga Lain']
+const ELECTRIC_OPTS    = ['450 watt', '900 watt', '>900 watt']
+
+function Step3Ekonomi({ form, setField, errors, mobile }) {
+  const photoRef   = React.useRef(null)
+  const kitchenRef = React.useRef(null)
+  const [photoErr,   setPhotoErr]   = React.useState(null)
+  const [kitchenErr, setKitchenErr] = React.useState(null)
+
+  const showFatherIncome  = ['Ayah & Ibu', 'Ayah Saja'].includes(form.mainProvider)
+  const showMotherIncome  = ['Ayah & Ibu', 'Ibu Saja'].includes(form.mainProvider)
+  const showWaliIncome    = form.mainProvider === 'Wali'
+
+  const handlePhoto = (f) => {
+    if (!f) return
+    if (f.size > 5_000_000) { setPhotoErr('Ukuran file melebihi 5 MB.'); return }
+    setPhotoErr(null)
+    setField('housePhotoFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
+  }
+  const removePhoto = () => {
+    setField('housePhotoFile', null); setPhotoErr(null)
+    if (photoRef.current) photoRef.current.value = ''
+  }
+
+  const handleKitchen = (f) => {
+    if (!f) return
+    if (f.size > 5_000_000) { setKitchenErr('Ukuran file melebihi 5 MB.'); return }
+    setKitchenErr(null)
+    setField('kitchenPhotoFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
+  }
+  const removeKitchen = () => {
+    setField('kitchenPhotoFile', null); setKitchenErr(null)
+    if (kitchenRef.current) kitchenRef.current.value = ''
+  }
+
+  return (
+    <StepContainer title="Kondisi ekonomi" subtitle="Data ekonomi keluarga untuk verifikasi kelayakan beasiswa. Isi dengan jujur dan sesuai kondisi nyata.">
+
+      {/* ── Penanggung kehidupan ── */}
+      <Field label="Siapa yang menanggung kehidupanmu sehari-hari?" required error={errors.mainProvider}>
+        <Select value={form.mainProvider} error={errors.mainProvider} onChange={(e) => setField('mainProvider', e.target.value)}>
+          <option value="">Pilih…</option>
+          {PROVIDER_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+        </Select>
+      </Field>
+
+      {/* ── Pendapatan — selalu tampil semua 3, required hanya yg relevan ── */}
+      {form.mainProvider && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'fadeUp .2s ease' }}>
+          <Field label="Pendapatan ayah per bulan" required={showFatherIncome} error={errors.fatherIncomeAmount}>
+            <RpInput value={form.fatherIncomeAmount} error={errors.fatherIncomeAmount}
+              onChange={(v) => setField('fatherIncomeAmount', v)} />
+          </Field>
+          <Field label="Pendapatan ibu per bulan" required={showMotherIncome} error={errors.motherIncomeAmount}>
+            <RpInput value={form.motherIncomeAmount} error={errors.motherIncomeAmount}
+              onChange={(v) => setField('motherIncomeAmount', v)} />
+          </Field>
+          <Field label="Pendapatan wali per bulan" required={showWaliIncome} error={errors.guardianIncomeAmount}>
+            <RpInput value={form.guardianIncomeAmount} error={errors.guardianIncomeAmount}
+              onChange={(v) => setField('guardianIncomeAmount', v)} />
+          </Field>
+        </div>
+      )}
+
+      {/* ── Komposisi keluarga ── */}
+      <div style={{ marginTop: 24 }}>
+        <SectionHeader title="Komposisi Keluarga" />
+        <div style={{ borderTop: '1px solid var(--ink-100)' }}>
+          <StepperRow label="Saya sendiri" auto autoValue={1} />
+          <StepperRow label="Kepala keluarga" auto autoValue={form.fatherCondition === 'Hidup' ? 1 : 0} />
+          <StepperRow label="Ibu rumah tangga" auto autoValue={form.motherCondition === 'Hidup' ? 1 : 0} />
+          <StepperRow label="Saudara dewasa bekerja"           value={form.adultSiblingsWorking}    onChange={(v) => setField('adultSiblingsWorking', v)} />
+          <StepperRow label="Saudara dewasa tidak bekerja"     value={form.adultSiblingsNotWorking}  onChange={(v) => setField('adultSiblingsNotWorking', v)} />
+          <StepperRow label="Saudara jenjang SMA / SMP"        value={form.siblingsHighSchool}       onChange={(v) => setField('siblingsHighSchool', v)} />
+          <StepperRow label="Saudara jenjang SD / Bayi"        value={form.siblingsElementary}       onChange={(v) => setField('siblingsElementary', v)} />
+          <StepperRow label="Kakek / Nenek"                    value={form.grandparentsCount}        onChange={(v) => setField('grandparentsCount', v)} max={4} />
+        </div>
+      </div>
+
+      {/* ── Tempat tinggal ── */}
+      <div style={{ marginTop: 24 }}>
+        <SectionHeader title="Tempat Tinggal" />
+        <div className="form-grid-2">
+          <Field label="Status rumah saat ini" required error={errors.houseStatus}>
+            <Select value={form.houseStatus} error={errors.houseStatus} onChange={(e) => setField('houseStatus', e.target.value)}>
+              <option value="">Pilih…</option>
+              {HOUSE_STATUS_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+            </Select>
+          </Field>
+          <Field label="Daya listrik rumah" required error={errors.electricPower}>
+            <Select value={form.electricPower} error={errors.electricPower} onChange={(e) => setField('electricPower', e.target.value)}>
+              <option value="">Pilih…</option>
+              {ELECTRIC_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+            </Select>
+          </Field>
+        </div>
+      </div>
+
+      {/* ── Kendaraan ── */}
+      <div style={{ marginTop: 24 }}>
+        <SectionHeader title="Kendaraan Keluarga" />
+        <div style={{ borderTop: '1px solid var(--ink-100)' }}>
+          <StepperRow label="Motor / roda 2"                      value={form.vehicleBike}  onChange={(v) => setField('vehicleBike', v)}  max={4} />
+          <StepperRow label="Mobil / roda 3–4"                    value={form.vehicleCar}   onChange={(v) => setField('vehicleCar', v)}   max={4} />
+          <StepperRow label="Kendaraan lainnya (perahu, speedboat, dll)" value={form.vehicleOther} onChange={(v) => setField('vehicleOther', v)} max={4} />
+        </div>
+      </div>
+
+      {/* ── Bantuan sosial ── */}
+      <div style={{ marginTop: 24 }}>
+        <SectionHeader title="Bantuan Sosial & BPJS" />
+        <div style={{ borderTop: '1px solid var(--ink-100)' }}>
+          <StepperRow label="Anggota keluarga aktif BPJS / PKH / KIS"     value={form.bpjsActiveCount}   onChange={(v) => setField('bpjsActiveCount', v)} />
+          <StepperRow label="Anggota keluarga non-aktif BPJS / PKH / KIS" value={form.bpjsInactiveCount} onChange={(v) => setField('bpjsInactiveCount', v)} />
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <Field label="Apakah kamu penerima KIP / KIP-K / Beasiswa Daerah / lainnya?" required error={errors.kipStatus}>
+            <Select value={form.kipStatus} error={errors.kipStatus} onChange={(e) => setField('kipStatus', e.target.value)}>
+              <option value="">Pilih…</option>
+              <option value="Ya">Ya</option>
+              <option value="Tidak">Tidak</option>
+            </Select>
+          </Field>
+        </div>
+      </div>
+
+      {/* ── Foto rumah ── */}
+      <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px dashed var(--ink-200)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 20 }}>
+          {/* Foto depan rumah */}
+          <Field label="Foto Tampak Depan Rumah" required error={errors.housePhotoFile || photoErr}
+            hint="Format JPG/PNG · maks 5 MB">
+            <input type="file" ref={photoRef} accept=".jpg,.jpeg,.png"
+              style={{ display: 'none' }} onChange={(e) => handlePhoto(e.target.files[0])} />
+            {!form.housePhotoFile ? (
+              <div className="upload-well" onClick={() => photoRef.current.click()}
+                style={{ cursor: 'pointer', borderColor: errors.housePhotoFile ? 'var(--danger-500)' : undefined }}>
+                <div className="uw-icon"><IFile size={20} /></div>
+                <div style={{ flex: 1 }}>
+                  <div className="uw-title">Unggah foto tampak depan</div>
+                  <div className="uw-sub">JPG / PNG · maks 5 MB</div>
+                </div>
+                <Button variant="outline-tosca" size="sm"
+                  onClick={(e) => { e.stopPropagation(); photoRef.current.click() }}>Pilih</Button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <img src={form.housePhotoFile.url} alt="Foto depan rumah"
+                  style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ink-200)', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.housePhotoFile.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.housePhotoFile.size / 1024).toFixed(0)} KB</div>
+                  <Button variant="ghost" size="sm" style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+                    onClick={removePhoto}>Hapus</Button>
+                </div>
+              </div>
+            )}
+          </Field>
+
+          {/* Foto dapur */}
+          <Field label="Foto Ruangan Dapur" error={kitchenErr}
+            hint="Format JPG/PNG · maks 5 MB">
+            <input type="file" ref={kitchenRef} accept=".jpg,.jpeg,.png"
+              style={{ display: 'none' }} onChange={(e) => handleKitchen(e.target.files[0])} />
+            {!form.kitchenPhotoFile ? (
+              <div className="upload-well" onClick={() => kitchenRef.current.click()}
+                style={{ cursor: 'pointer' }}>
+                <div className="uw-icon"><IFile size={20} /></div>
+                <div style={{ flex: 1 }}>
+                  <div className="uw-title">Unggah foto dapur</div>
+                  <div className="uw-sub">JPG / PNG · maks 5 MB</div>
+                </div>
+                <Button variant="outline-tosca" size="sm"
+                  onClick={(e) => { e.stopPropagation(); kitchenRef.current.click() }}>Pilih</Button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <img src={form.kitchenPhotoFile.url} alt="Foto dapur"
+                  style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ink-200)', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.kitchenPhotoFile.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.kitchenPhotoFile.size / 1024).toFixed(0)} KB</div>
+                  <Button variant="ghost" size="sm" style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+                    onClick={removeKitchen}>Hapus</Button>
+                </div>
+              </div>
+            )}
+          </Field>
+        </div>
+      </div>
+
+    </StepContainer>
+  )
+}
+
+function Step4Prestasi({ form, setField, errors, mobile }) {
+  const { config } = useFormConfig()
+  const achCfg    = config.achievement_config || {}
+  const toStr     = (arr) => (arr || []).map(o => typeof o === 'string' ? o : o.label)
+  const levelOpts = toStr(achCfg.levels)
+  const rankOpts  = toStr(achCfg.ranks)
+
+  const addItem = () => {
+    if (form.noAchievement) setField('noAchievement', false)
+    setField('achievements', [...form.achievements, { ...BLANK_ACHIEVEMENT }])
+  }
+  const update = (idx, key, val) => {
+    const next = form.achievements.map((a, i) => i === idx ? { ...a, [key]: val } : a)
+    setField('achievements', next)
+  }
+  const remove = (idx) => setField('achievements', form.achievements.filter((_, i) => i !== idx))
+
+  return (
+    <StepContainer title="Prestasi" subtitle="Cantumkan prestasi akademik maupun non-akademik dalam 3 tahun terakhir. Jika banyak, prioritaskan yang paling relevan.">
+      <Checkbox
+        checked={form.noAchievement}
+        onChange={(checked) => {
+          setField('noAchievement', checked)
+          if (checked) setField('achievements', [])
+        }}
+      >
+        Saya tidak memiliki prestasi apapun
+      </Checkbox>
+      {errors._list && (
+        <div className="alert alert-amber"><span className="alert-icon"><IAlert size={18} /></span><div>{errors._list}</div></div>
+      )}
+      {!form.noAchievement && form.achievements.map((a, i) => (
+        <div key={i} className="dynamic-item">
+          <div className="di-head">
+            <div className="di-title">Prestasi #{i + 1}</div>
+            <button title="Hapus" onClick={() => remove(i)}><ITrash size={16} /></button>
+          </div>
+          <Field label="Judul prestasi" required error={errors[`ach-${i}-title`]}>
+            <Input value={a.title} error={errors[`ach-${i}-title`]}
+              onChange={(e) => update(i, 'title', e.target.value)}
+              placeholder="Contoh: Juara 2 Olimpiade Sains Kabupaten — Biologi" />
+          </Field>
+          <div className="form-grid-3">
+            <Field label="Tingkat" required error={errors[`ach-${i}-level`]}>
+              <Select value={a.level} error={errors[`ach-${i}-level`]} onChange={(e) => update(i, 'level', e.target.value)}>
+                <option value="">Pilih…</option>
+                {levelOpts.map(l => <option key={l} value={l}>{l}</option>)}
+              </Select>
+            </Field>
+            <Field label="Peringkat/Medali" required error={errors[`ach-${i}-rank`]}>
+              <Select value={a.rank} error={errors[`ach-${i}-rank`]} onChange={(e) => update(i, 'rank', e.target.value)}>
+                <option value="">Pilih…</option>
+                {rankOpts.map(r => <option key={r} value={r}>{r}</option>)}
+              </Select>
+            </Field>
+            <Field label="Tahun" required error={errors[`ach-${i}-year`]}>
+              <Input type="number" min="2015" max="2026" value={a.year} error={errors[`ach-${i}-year`]}
+                onChange={(e) => update(i, 'year', e.target.value)} placeholder="2025" />
+            </Field>
+            <Field label="Penyelenggara">
+              <Input value={a.issuer} onChange={(e) => update(i, 'issuer', e.target.value)} placeholder="Contoh: Dinas Pendidikan" />
+            </Field>
+          </div>
+        </div>
+      ))}
+      {!form.noAchievement && (
+        <button className="add-item-btn" onClick={addItem} type="button">
+          <span className="plus-dot"><IPlus size={14} stroke={2.8} /></span>
+          Tambah Prestasi
+        </button>
+      )}
+    </StepContainer>
+  )
+}
+
+function Step5Organisasi({ form, setField, errors, mobile }) {
+  const { config } = useFormConfig()
+  const orgCfg  = config.organization_config || {}
+  const roleOpts = (orgCfg.roles || []).map(o => typeof o === 'string' ? o : o.label)
+
+  const addItem = () => {
+    if (form.noOrganization) setField('noOrganization', false)
+    setField('organizations', [...form.organizations, { ...BLANK_ORG }])
+  }
+  const update = (idx, key, val) => {
+    const next = form.organizations.map((o, i) => i === idx ? { ...o, [key]: val } : o)
+    setField('organizations', next)
+  }
+  const remove = (idx) => setField('organizations', form.organizations.filter((_, i) => i !== idx))
+
+  return (
+    <StepContainer title="Pengalaman organisasi" subtitle="Kegiatan kepemimpinan, kepanitiaan, atau komunitas yang pernah Anda ikuti — akademik maupun non-akademik.">
+      <Checkbox
+        checked={form.noOrganization}
+        onChange={(checked) => {
+          setField('noOrganization', checked)
+          if (checked) setField('organizations', [])
+        }}
+      >
+        Saya tidak memiliki pengalaman organisasi apapun
+      </Checkbox>
+      {errors._list && (
+        <div className="alert alert-amber"><span className="alert-icon"><IAlert size={18} /></span><div>{errors._list}</div></div>
+      )}
+      {!form.noOrganization && form.organizations.map((o, i) => (
+        <div key={i} className="dynamic-item">
+          <div className="di-head">
+            <div className="di-title">Organisasi #{i + 1}</div>
+            <button title="Hapus" onClick={() => remove(i)}><ITrash size={16} /></button>
+          </div>
+          <div className="form-grid-2">
+            <Field label="Nama organisasi" required error={errors[`org-${i}-name`]}>
+              <Input value={o.name} error={errors[`org-${i}-name`]}
+                onChange={(e) => update(i, 'name', e.target.value)} placeholder="Contoh: OSIS SMAN 1 Kendari" />
+            </Field>
+            <Field label="Peran/jabatan" required error={errors[`org-${i}-role`]}>
+              <Select value={o.role} error={errors[`org-${i}-role`]} onChange={(e) => update(i, 'role', e.target.value)}>
+                <option value="">Pilih…</option>
+                {roleOpts.map(r => <option key={r} value={r}>{r}</option>)}
+              </Select>
+            </Field>
+          </div>
+          <Field label="Periode keaktifan" required error={errors[`org-${i}-period`]}>
+            <Input value={o.period} error={errors[`org-${i}-period`]}
+              onChange={(e) => update(i, 'period', e.target.value)} placeholder="Contoh: Jul 2023 – Jun 2024" />
+          </Field>
+          <Field label="Deskripsi kontribusi" hint="Maks 280 karakter. Ceritakan dampak nyata dari peran Anda.">
+            <Textarea value={o.description} maxLength={280}
+              onChange={(e) => update(i, 'description', e.target.value)}
+              placeholder="Contoh: Merancang program literasi untuk 120 siswa kelas X…" />
+          </Field>
+        </div>
+      ))}
+      {!form.noOrganization && (
+        <button className="add-item-btn" onClick={addItem} type="button">
+          <span className="plus-dot"><IPlus size={14} stroke={2.8} /></span>
+          Tambah Organisasi
+        </button>
+      )}
+    </StepContainer>
+  )
+}
+
+const CountedTextarea = ({ value, error, placeholder, min = 50, max = 400, onChange }) => (
+  <>
+    <Textarea value={value} error={error} maxLength={max}
+      onChange={onChange} placeholder={placeholder}
+      style={{ minHeight: 140 }} />
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-500)', marginTop: 4 }}>
+      <span>Minimal {min} karakter</span>
+      <span className={`mono ${(value || '').length > max ? 'text-danger' : ''}`}>{(value || '').length} / {max}</span>
+    </div>
+  </>
+)
+
+function Step6Esai({ form, setField, errors, mobile }) {
+  const { config } = useFormConfig()
+  const essays = config.essay_config || []
+
+  return (
+    <StepContainer title="Esai" subtitle="Tulis jawaban jujur dan ringkas berdasarkan pandangan pribadi Anda.">
+      {essays.map(essay => (
+        <Field key={essay.id} label={essay.label} required error={errors[essay.id]}>
+          <CountedTextarea
+            value={form[essay.id] || ''}
+            error={errors[essay.id]}
+            onChange={(e) => setField(essay.id, e.target.value)}
+            placeholder={essay.placeholder}
+            min={essay.min}
+            max={essay.max}
+          />
+        </Field>
+      ))}
+    </StepContainer>
+  )
+}
+
+export const STEP_COMPONENTS = [null, Step1DataPribadi, Step2Keluarga, Step3Ekonomi, Step4Prestasi, Step5Organisasi, Step6Esai]
