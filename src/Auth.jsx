@@ -1,11 +1,11 @@
-// Auth.jsx — Dev login with hardcoded credentials
+// Auth.jsx — Login screen (credentials via env vars, fallback for demo)
 import React from 'react'
 import { ICheck, IStar, ILock, ILogo } from './Icons.jsx'
 import { AbstractShapes, Button, Field, Input } from './Primitives.jsx'
 
 const DEV_CREDENTIALS = {
-  admin: { password: 'etos123', role: 'admin' },
-  user:  { password: 'user123', role: 'user'  },
+  admin: { password: import.meta.env.VITE_ADMIN_PASS || 'etos123', role: 'admin' },
+  user:  { password: import.meta.env.VITE_USER_PASS  || 'user123', role: 'user'  },
 }
 
 export function AuthScreen({ onAuthenticated, mobile }) {

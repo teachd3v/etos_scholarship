@@ -5,7 +5,6 @@ import { DEFAULT_CONFIG } from './lib/defaultConfig.js'
 import { ICheck, IX, ISave, IAlert, IChevronLeft, ITrash, IPlus } from './Icons.jsx'
 import { GlassCard, Button } from './Primitives.jsx'
 
-const IS_DEV_MODE = (import.meta.env.VITE_SUPABASE_URL || '').includes('placeholder')
 
 const STATUS_LABELS = {
   pending: { label: 'Menunggu', pill: 'pill-amber' },

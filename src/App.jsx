@@ -170,11 +170,14 @@ export default function App() {
     try {
       if (saved) {
         const parsed = JSON.parse(saved)
-        // Blob URLs tidak valid setelah reload — bersihkan agar tidak ERR_FILE_NOT_FOUND
+        // Blob URLs tidak valid setelah reload — bersihkan semua file fields
         const stripBlob = (f) => f?.url?.startsWith('blob:') ? null : f
-        parsed.photoFile = stripBlob(parsed.photoFile)
-        parsed.kkFile = stripBlob(parsed.kkFile)
+        parsed.photoFile          = stripBlob(parsed.photoFile)
+        parsed.kkFile             = stripBlob(parsed.kkFile)
         parsed.admissionProofFile = stripBlob(parsed.admissionProofFile)
+        parsed.ijazahFile         = stripBlob(parsed.ijazahFile)
+        parsed.housePhotoFile     = stripBlob(parsed.housePhotoFile)
+        parsed.kitchenPhotoFile   = stripBlob(parsed.kitchenPhotoFile)
         return parsed
       }
     } catch { }

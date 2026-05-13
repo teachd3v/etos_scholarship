@@ -48,7 +48,13 @@ npm run dev
 Aplikasi langsung berjalan tanpa konfigurasi tambahan. Semua data tersimpan di `localStorage` browser.
 
 Akses admin di: `http://localhost:5173/admin`
-Password default: `etosadmin2026`
+
+| Username | Password default | Keterangan |
+|---|---|---|
+| `admin` | `etos123` | Redirect ke `/admin` |
+| `user` | `user123` | Masuk ke portal pendaftar |
+
+> Kredensial dapat diubah via env vars `VITE_ADMIN_PASS` dan `VITE_USER_PASS` (lihat `.env.example`)
 
 ### Dengan Supabase (mode produksi)
 
