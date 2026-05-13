@@ -4,6 +4,57 @@ import { BLANK_ACHIEVEMENT, BLANK_ORG } from './FormState.jsx'
 import { IFile, IAlert, IPlus, ITrash } from './Icons.jsx'
 import { Button, Field, Input, Textarea, Select, Checkbox } from './Primitives.jsx'
 import { useFormConfig } from './lib/FormConfigContext.jsx'
+import { uploadDocument, deleteDocument, validateFile } from './lib/storage.js'
+
+/**
+ * useFileUpload — hook untuk wire upload ke Supabase Storage per file field.
+ * Saat user pilih file: validate → upload → upsert documents row → setField state.
+ * Saat user remove: delete dari storage + documents table.
+ */
+function useFileUpload({ docType, fieldKey, currentFile, applicantId, setField }) {
+  const [uploading, setUploading] = React.useState(false)
+  const [error, setError]         = React.useState(null)
+
+  const upload = React.useCallback(async (file) => {
+    if (!file) return
+    const valErr = validateFile(docType, file)
+    if (valErr) { setError(valErr); return }
+    if (!applicantId) {
+      setError('Data pendaftar belum tersedia. Refresh halaman dulu.')
+      return
+    }
+    setError(null)
+    setUploading(true)
+    try {
+      const result = await uploadDocument({
+        file, docType, applicantId,
+        oldPath: currentFile?.path || null,
+      })
+      setField(fieldKey, result)
+    } catch (err) {
+      setError(err.message || 'Upload gagal, coba lagi.')
+    } finally {
+      setUploading(false)
+    }
+  }, [docType, fieldKey, currentFile?.path, applicantId, setField])
+
+  const remove = React.useCallback(async () => {
+    setError(null)
+    if (currentFile?.path) {
+      setUploading(true)
+      try {
+        await deleteDocument({ path: currentFile.path, applicantId, docType })
+      } catch (err) {
+        console.warn('Gagal hapus file:', err)
+      } finally {
+        setUploading(false)
+      }
+    }
+    setField(fieldKey, null)
+  }, [docType, fieldKey, currentFile?.path, applicantId, setField])
+
+  return { upload, remove, uploading, error }
+}
 
 const GENDER_OPTS = ['Laki-laki', 'Perempuan']
 
@@ -19,13 +70,12 @@ function StepContainer({ title, subtitle, children }) {
   )
 }
 
-function Step1DataPribadi({ form, setField, errors, mobile }) {
+function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
   const photoInputRef = React.useRef(null)
-  const handlePhoto = (f) => {
-    if (!f) return
-    if (f.size > 5_000_000) return alert('Ukuran foto maksimal 5 MB.')
-    setField('photoFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
-  }
+  const photoUpload = useFileUpload({
+    docType: 'photo', fieldKey: 'photoFile',
+    currentFile: form.photoFile, applicantId, setField,
+  })
 
   const [provinces, setProvinces] = React.useState([])
   const [regencies, setRegencies] = React.useState([])
@@ -65,15 +115,20 @@ function Step1DataPribadi({ form, setField, errors, mobile }) {
   return (
     <StepContainer title="Data pribadi" subtitle="Isi identitas Anda sesuai KTP/KK.">
       <div style={{ marginBottom: 24 }}>
-        <input type="file" ref={photoInputRef} accept="image/*" style={{ display: 'none' }} onChange={(e) => handlePhoto(e.target.files[0])} />
-        <Field label="Pas Foto Profil (Wajib)" required error={errors.photoFile} hint="Tampilkan wajah jelas. Rasio 3:4 atau 4:6 (Maks 5MB)">
+        <input type="file" ref={photoInputRef} accept="image/jpeg,image/png" style={{ display: 'none' }} onChange={(e) => photoUpload.upload(e.target.files[0])} />
+        <Field label="Pas Foto Profil (Wajib)" required error={errors.photoFile || photoUpload.error} hint="JPG/PNG. Tampilkan wajah jelas. Rasio 3:4 atau 4:6 (Maks 5MB)">
           <div style={{ display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'flex-start' : 'center', gap: 16 }}>
             <div style={{ width: 64, height: 64, borderRadius: 32, background: 'var(--ink-100)', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--ink-200)' }}>
               {form.photoFile && form.photoFile.url ? <img src={form.photoFile.url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
             </div>
-            <div style={{ flex: 1 }}>
-              <Button variant="outline-tosca" size="sm" onClick={() => photoInputRef.current.click()}>Pilih Foto</Button>
-              {form.photoFile && <div style={{ fontSize: 12, marginTop: 6, color: 'var(--ink-500)' }}>{form.photoFile.name}</div>}
+            <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Button variant="outline-tosca" size="sm" loading={photoUpload.uploading} onClick={() => photoInputRef.current.click()}>
+                {photoUpload.uploading ? 'Mengupload…' : (form.photoFile ? 'Ganti Foto' : 'Pilih Foto')}
+              </Button>
+              {form.photoFile && !photoUpload.uploading && (
+                <Button variant="ghost" size="sm" onClick={photoUpload.remove}>Hapus</Button>
+              )}
+              {form.photoFile && <div style={{ width: '100%', fontSize: 12, color: 'var(--ink-500)' }}>{form.photoFile.name}</div>}
             </div>
           </div>
         </Field>
@@ -173,21 +228,20 @@ function SectionHeader({ title }) {
   )
 }
 
-function Step2Keluarga({ form, setField, errors, mobile }) {
+function Step2Keluarga({ form, setField, errors, mobile, applicantId }) {
   const { config } = useFormConfig()
   const jobOpts = config.job_options || []
 
   const kkInputRef = React.useRef(null)
-  const [kkFileError, setKkFileError] = React.useState(null)
+  const kkUpload = useFileUpload({
+    docType: 'kk', fieldKey: 'kkFile',
+    currentFile: form.kkFile, applicantId, setField,
+  })
 
-  const handleKK = (f) => {
-    if (!f) return
-    if (f.size > 2_000_000) { setKkFileError('Ukuran file melebihi 2 MB.'); return }
-    setKkFileError(null)
-    setField('kkFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
-  }
-  const removeKK = () => { setField('kkFile', null); setKkFileError(null); if (kkInputRef.current) kkInputRef.current.value = '' }
-  const isImage = (file) => file && /\.(jpg|jpeg|png)$/i.test(file.name)
+  const isImage = (file) => file && (
+    /\.(jpg|jpeg|png|webp)$/i.test(file.name || '') ||
+    (file.mime && file.mime.startsWith('image/'))
+  )
 
   return (
     <StepContainer title="Data keluarga" subtitle="Informasi orang tua/wali, digunakan untuk verifikasi kondisi sosial-ekonomi keluarga.">
@@ -325,19 +379,21 @@ function Step2Keluarga({ form, setField, errors, mobile }) {
 
       {/* ── Kartu Keluarga ── */}
       <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px dashed var(--ink-200)' }}>
-        <Field label="Kartu Keluarga (KK)" required error={errors.kkFile || kkFileError}>
+        <Field label="Kartu Keluarga (KK)" required error={errors.kkFile || kkUpload.error}>
           <input type="file" ref={kkInputRef} accept=".pdf,.jpg,.jpeg,.png"
-            style={{ display: 'none' }} onChange={(e) => handleKK(e.target.files[0])} />
+            style={{ display: 'none' }} onChange={(e) => kkUpload.upload(e.target.files[0])} />
           {!form.kkFile ? (
-            <div className="upload-well" onClick={() => kkInputRef.current.click()}
-              style={{ cursor: 'pointer', borderColor: errors.kkFile ? 'var(--danger-500)' : undefined }}>
+            <div className="upload-well" onClick={() => !kkUpload.uploading && kkInputRef.current.click()}
+              style={{ cursor: kkUpload.uploading ? 'wait' : 'pointer', borderColor: errors.kkFile ? 'var(--danger-500)' : undefined }}>
               <div className="uw-icon"><IFile size={20} /></div>
               <div style={{ flex: 1 }}>
                 <div className="uw-title">Unggah Kartu Keluarga</div>
                 <div className="uw-sub">PDF/JPG/PNG · maks 2 MB</div>
               </div>
-              <Button variant="outline-tosca" size="sm"
-                onClick={(e) => { e.stopPropagation(); kkInputRef.current.click() }}>Pilih file</Button>
+              <Button variant="outline-tosca" size="sm" loading={kkUpload.uploading}
+                onClick={(e) => { e.stopPropagation(); kkInputRef.current.click() }}>
+                {kkUpload.uploading ? 'Mengupload…' : 'Pilih file'}
+              </Button>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -351,9 +407,9 @@ function Step2Keluarga({ form, setField, errors, mobile }) {
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.kkFile.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.kkFile.size / 1024).toFixed(0)} KB</div>
-                <Button variant="ghost" size="sm" style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
-                  onClick={removeKK}>Hapus</Button>
+                <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.kkFile.size / 1024).toFixed(0)} KB · Tersimpan</div>
+                <Button variant="ghost" size="sm" loading={kkUpload.uploading} style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+                  onClick={kkUpload.remove}>Hapus</Button>
               </div>
             </div>
           )}
@@ -411,37 +467,22 @@ const PROVIDER_OPTS    = ['Ayah & Ibu', 'Ayah Saja', 'Ibu Saja', 'Wali']
 const HOUSE_STATUS_OPTS = ['Milik sendiri', 'Sewa/Kontrak', 'Menumpang Keluarga Lain']
 const ELECTRIC_OPTS    = ['450 watt', '900 watt', '>900 watt']
 
-function Step3Ekonomi({ form, setField, errors, mobile }) {
+function Step3Ekonomi({ form, setField, errors, mobile, applicantId }) {
   const photoRef   = React.useRef(null)
   const kitchenRef = React.useRef(null)
-  const [photoErr,   setPhotoErr]   = React.useState(null)
-  const [kitchenErr, setKitchenErr] = React.useState(null)
 
   const showFatherIncome  = ['Ayah & Ibu', 'Ayah Saja'].includes(form.mainProvider)
   const showMotherIncome  = ['Ayah & Ibu', 'Ibu Saja'].includes(form.mainProvider)
   const showWaliIncome    = form.mainProvider === 'Wali'
 
-  const handlePhoto = (f) => {
-    if (!f) return
-    if (f.size > 5_000_000) { setPhotoErr('Ukuran file melebihi 5 MB.'); return }
-    setPhotoErr(null)
-    setField('housePhotoFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
-  }
-  const removePhoto = () => {
-    setField('housePhotoFile', null); setPhotoErr(null)
-    if (photoRef.current) photoRef.current.value = ''
-  }
-
-  const handleKitchen = (f) => {
-    if (!f) return
-    if (f.size > 5_000_000) { setKitchenErr('Ukuran file melebihi 5 MB.'); return }
-    setKitchenErr(null)
-    setField('kitchenPhotoFile', { file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
-  }
-  const removeKitchen = () => {
-    setField('kitchenPhotoFile', null); setKitchenErr(null)
-    if (kitchenRef.current) kitchenRef.current.value = ''
-  }
+  const housePhotoUpload = useFileUpload({
+    docType: 'house_photo', fieldKey: 'housePhotoFile',
+    currentFile: form.housePhotoFile, applicantId, setField,
+  })
+  const kitchenPhotoUpload = useFileUpload({
+    docType: 'kitchen_photo', fieldKey: 'kitchenPhotoFile',
+    currentFile: form.kitchenPhotoFile, applicantId, setField,
+  })
 
   return (
     <StepContainer title="Kondisi ekonomi" subtitle="Data ekonomi keluarga untuk verifikasi kelayakan beasiswa. Isi dengan jujur dan sesuai kondisi nyata.">
@@ -538,20 +579,22 @@ function Step3Ekonomi({ form, setField, errors, mobile }) {
       <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px dashed var(--ink-200)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 20 }}>
           {/* Foto depan rumah */}
-          <Field label="Foto Tampak Depan Rumah" required error={errors.housePhotoFile || photoErr}
+          <Field label="Foto Tampak Depan Rumah" required error={errors.housePhotoFile || housePhotoUpload.error}
             hint="Format JPG/PNG · maks 5 MB">
             <input type="file" ref={photoRef} accept=".jpg,.jpeg,.png"
-              style={{ display: 'none' }} onChange={(e) => handlePhoto(e.target.files[0])} />
+              style={{ display: 'none' }} onChange={(e) => housePhotoUpload.upload(e.target.files[0])} />
             {!form.housePhotoFile ? (
-              <div className="upload-well" onClick={() => photoRef.current.click()}
-                style={{ cursor: 'pointer', borderColor: errors.housePhotoFile ? 'var(--danger-500)' : undefined }}>
+              <div className="upload-well" onClick={() => !housePhotoUpload.uploading && photoRef.current.click()}
+                style={{ cursor: housePhotoUpload.uploading ? 'wait' : 'pointer', borderColor: errors.housePhotoFile ? 'var(--danger-500)' : undefined }}>
                 <div className="uw-icon"><IFile size={20} /></div>
                 <div style={{ flex: 1 }}>
                   <div className="uw-title">Unggah foto tampak depan</div>
                   <div className="uw-sub">JPG / PNG · maks 5 MB</div>
                 </div>
-                <Button variant="outline-tosca" size="sm"
-                  onClick={(e) => { e.stopPropagation(); photoRef.current.click() }}>Pilih</Button>
+                <Button variant="outline-tosca" size="sm" loading={housePhotoUpload.uploading}
+                  onClick={(e) => { e.stopPropagation(); photoRef.current.click() }}>
+                  {housePhotoUpload.uploading ? 'Mengupload…' : 'Pilih'}
+                </Button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -559,29 +602,31 @@ function Step3Ekonomi({ form, setField, errors, mobile }) {
                   style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ink-200)', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.housePhotoFile.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.housePhotoFile.size / 1024).toFixed(0)} KB</div>
-                  <Button variant="ghost" size="sm" style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
-                    onClick={removePhoto}>Hapus</Button>
+                  <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.housePhotoFile.size / 1024).toFixed(0)} KB · Tersimpan</div>
+                  <Button variant="ghost" size="sm" loading={housePhotoUpload.uploading} style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+                    onClick={housePhotoUpload.remove}>Hapus</Button>
                 </div>
               </div>
             )}
           </Field>
 
           {/* Foto dapur */}
-          <Field label="Foto Ruangan Dapur" error={kitchenErr}
+          <Field label="Foto Ruangan Dapur" error={kitchenPhotoUpload.error}
             hint="Format JPG/PNG · maks 5 MB">
             <input type="file" ref={kitchenRef} accept=".jpg,.jpeg,.png"
-              style={{ display: 'none' }} onChange={(e) => handleKitchen(e.target.files[0])} />
+              style={{ display: 'none' }} onChange={(e) => kitchenPhotoUpload.upload(e.target.files[0])} />
             {!form.kitchenPhotoFile ? (
-              <div className="upload-well" onClick={() => kitchenRef.current.click()}
-                style={{ cursor: 'pointer' }}>
+              <div className="upload-well" onClick={() => !kitchenPhotoUpload.uploading && kitchenRef.current.click()}
+                style={{ cursor: kitchenPhotoUpload.uploading ? 'wait' : 'pointer' }}>
                 <div className="uw-icon"><IFile size={20} /></div>
                 <div style={{ flex: 1 }}>
                   <div className="uw-title">Unggah foto dapur</div>
                   <div className="uw-sub">JPG / PNG · maks 5 MB</div>
                 </div>
-                <Button variant="outline-tosca" size="sm"
-                  onClick={(e) => { e.stopPropagation(); kitchenRef.current.click() }}>Pilih</Button>
+                <Button variant="outline-tosca" size="sm" loading={kitchenPhotoUpload.uploading}
+                  onClick={(e) => { e.stopPropagation(); kitchenRef.current.click() }}>
+                  {kitchenPhotoUpload.uploading ? 'Mengupload…' : 'Pilih'}
+                </Button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -589,9 +634,9 @@ function Step3Ekonomi({ form, setField, errors, mobile }) {
                   style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ink-200)', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.kitchenPhotoFile.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.kitchenPhotoFile.size / 1024).toFixed(0)} KB</div>
-                  <Button variant="ghost" size="sm" style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
-                    onClick={removeKitchen}>Hapus</Button>
+                  <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.kitchenPhotoFile.size / 1024).toFixed(0)} KB · Tersimpan</div>
+                  <Button variant="ghost" size="sm" loading={kitchenPhotoUpload.uploading} style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+                    onClick={kitchenPhotoUpload.remove}>Hapus</Button>
                 </div>
               </div>
             )}

@@ -76,9 +76,14 @@ export function Field({ label, hint, error, required, children }) {
   )
 }
 
-export function Input({ error, onChange, type, ...rest }) {
+export function Input({ error, onChange, type, autoComplete, ...rest }) {
+  // Field password (termasuk saat di-"show" jadi type='text') tidak boleh auto-uppercase
+  const isPasswordField =
+    type === 'password' ||
+    autoComplete === 'current-password' ||
+    autoComplete === 'new-password'
   const handleChange = (e) => {
-    if ((!type || type === 'text') && e.target.value) {
+    if ((!type || type === 'text') && !isPasswordField && e.target.value) {
       const start = e.target.selectionStart;
       const end = e.target.selectionEnd;
       e.target.value = e.target.value.toUpperCase();
@@ -90,7 +95,7 @@ export function Input({ error, onChange, type, ...rest }) {
     }
     onChange && onChange(e);
   }
-  return <input type={type} className={`input ${error ? 'has-error' : ''}`} onChange={handleChange} {...rest} />
+  return <input type={type} autoComplete={autoComplete} className={`input ${error ? 'has-error' : ''}`} onChange={handleChange} {...rest} />
 }
 export function Textarea({ error, ...rest }) { return <textarea className={`textarea ${error ? 'has-error' : ''}`} {...rest} /> }
 export function Select({ error, children, ...rest }) { return <select className={`select ${error ? 'has-error' : ''}`} {...rest}>{children}</select> }

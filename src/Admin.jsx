@@ -2,6 +2,10 @@
 import React from 'react'
 import { useFormConfig } from './lib/FormConfigContext.jsx'
 import { DEFAULT_CONFIG } from './lib/defaultConfig.js'
+import { saveConfigKey } from './lib/formConfig.js'
+import { supabase } from './lib/supabase.js'
+import { dbToForm } from './lib/applicant.js'
+import { getSignedUrls } from './lib/storage.js'
 import { ICheck, IX, ISave, IAlert, IChevronLeft, ITrash, IPlus } from './Icons.jsx'
 import { GlassCard, Button } from './Primitives.jsx'
 
@@ -22,51 +26,127 @@ const TAB_FILTER = {
   'Ditolak': 'rejected',
 }
 
+// Map doc_type → field name di submission object (legacy admin naming)
+const DOC_TYPE_TO_SUB_FIELD = {
+  photo:           'photoFile',
+  kk:              'kkFile',
+  ijazah:          'ijazahFile',
+  admission_proof: 'admissionProofFile',
+  house_photo:     'housePhotoFile',
+  kitchen_photo:   'kitchenPhotoFile',
+}
+
+function mapApplicantRowToSubmission(row, achievements = [], organizations = [], documents = []) {
+  // dbToForm sudah handle mapping scalar fields snake_case → camelCase
+  const form = dbToForm(row)
+  const sub = {
+    ...form,
+    _idx:               row.id,
+    id:                 row.id,
+    user_id:            row.user_id,
+    is_submitted:       row.is_submitted === true,
+    status:             row.status || 'pending',
+    registrationNumber: row.registration_number || null,
+    submittedAt:        form.submittedAt || null,
+    photoFile:          null,
+    kkFile:             null,
+    admissionProofFile: null,
+    ijazahFile:         null,
+    housePhotoFile:     null,
+    kitchenPhotoFile:   null,
+    fotoProfil:         null,   // legacy alias untuk display avatar
+    achievements: (achievements || []).map(a => ({
+      title: a.title || '', level: a.level || '', rank: a.rank || '',
+      year: a.year ? String(a.year) : '', issuer: a.issuer || '',
+    })),
+    organizations: (organizations || []).map(o => ({
+      name: o.name || '', role: o.role || '', period: o.period || '',
+      description: o.description || '',
+    })),
+  }
+  // Inject documents
+  for (const doc of documents || []) {
+    const field = DOC_TYPE_TO_SUB_FIELD[doc.doc_type]
+    if (!field) continue
+    sub[field] = {
+      url:  doc._signedUrl,
+      path: doc.storage_path,
+      name: doc.file_name,
+      size: doc.file_size,
+      mime: doc.mime_type,
+    }
+    if (doc.doc_type === 'photo') sub.fotoProfil = doc._signedUrl
+  }
+  return sub
+}
+
 function useSubmissions() {
   const [submissions, setSubmissions] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
 
-  const fetchSubmissions = React.useCallback(() => {
+  const fetchSubmissions = React.useCallback(async () => {
+    setLoading(true)
     try {
-      const raw = JSON.parse(localStorage.getItem('etos_submissions') || '[]')
-      const mapped = raw.filter(d => d.is_submitted).map(d => ({
-        ...d,
-        _idx: d._localId || d.registrationNumber || crypto.randomUUID(),
-        fotoProfil:        d.photoFile?.url || null,
-        kkFile:            d.kkFile?.url || null,
-        admissionProofFile: d.admissionProofFile?.url || null,
-        ijazahFile:        d.ijazahFile?.url || null,
-        achievements:      d.achievements || [],
-        organizations:     d.organizations || [],
-        status:            d.status || 'pending',
-      }))
+      const { data: rows, error } = await supabase
+        .from('applicants')
+        .select('*')
+        .eq('is_submitted', true)
+        .order('submitted_at', { ascending: false })
+      if (error) throw error
+      if (!rows || rows.length === 0) { setSubmissions([]); return }
+
+      const ids = rows.map(r => r.id)
+      const [{ data: ach = [] }, { data: orgs = [] }, { data: docs = [] }] = await Promise.all([
+        supabase.from('achievements').select('*').in('applicant_id', ids).order('sort_order'),
+        supabase.from('organizations').select('*').in('applicant_id', ids).order('sort_order'),
+        supabase.from('documents').select('*').in('applicant_id', ids),
+      ])
+
+      // Bulk-fetch signed URLs untuk semua dokumen sekali jalan
+      const urlMap = await getSignedUrls((docs || []).map(d => d.storage_path))
+      const docsWithUrls = (docs || []).map(d => ({ ...d, _signedUrl: urlMap[d.storage_path] || null }))
+
+      const mapped = rows.map(r => {
+        const a = (ach || []).filter(x => x.applicant_id === r.id)
+        const o = (orgs || []).filter(x => x.applicant_id === r.id)
+        const d = docsWithUrls.filter(x => x.applicant_id === r.id)
+        return mapApplicantRowToSubmission(r, a, o, d)
+      })
       setSubmissions(mapped)
-    } catch (e) { console.error('useSubmissions error:', e) }
+    } catch (e) {
+      console.error('useSubmissions error:', e)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   React.useEffect(() => {
     fetchSubmissions()
-    // Tangkap perubahan dari tab lain
-    window.addEventListener('storage', fetchSubmissions)
-    return () => window.removeEventListener('storage', fetchSubmissions)
+    // Realtime: refetch saat ada submission baru / status update
+    const channel = supabase
+      .channel('admin_applicants_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants' }, () => fetchSubmissions())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [fetchSubmissions])
 
-  const updateStatus = (idx, status) => {
-    setSubmissions(prev => prev.map(s => s._idx === idx ? { ...s, status } : s))
-    try {
-      // Update etos_submissions (dibaca admin)
-      const raw = JSON.parse(localStorage.getItem('etos_submissions') || '[]')
-      const updated = raw.map(s => (s._localId || s.registrationNumber) === idx ? { ...s, status } : s)
-      localStorage.setItem('etos_submissions', JSON.stringify(updated))
-
-      // Sync ke etos_form (dibaca dashboard user) — hanya jika submission ini milik user aktif di browser yang sama
-      const userForm = JSON.parse(localStorage.getItem('etos_form') || 'null')
-      if (userForm && (userForm._localId === idx || userForm.registrationNumber === idx)) {
-        localStorage.setItem('etos_form', JSON.stringify({ ...userForm, status }))
-      }
-    } catch {}
+  // updateStatus(applicantId, status): UPDATE applicants → trigger DB akan audit log + queue email
+  const updateStatus = async (applicantId, status) => {
+    // Optimistic UI
+    setSubmissions(prev => prev.map(s => s._idx === applicantId ? { ...s, status } : s))
+    const { error } = await supabase
+      .from('applicants')
+      .update({ status })
+      .eq('id', applicantId)
+    if (error) {
+      console.error('updateStatus error:', error)
+      // Rollback dengan refetch
+      fetchSubmissions()
+      alert('Gagal update status: ' + error.message)
+    }
   }
 
-  return { submissions, updateStatus, refresh: fetchSubmissions }
+  return { submissions, loading, updateStatus, refresh: fetchSubmissions }
 }
 
 function StatusPill({ status }) {
@@ -257,11 +337,11 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
           {kv('Program studi', submission.studyProgram)}
         </div>
         <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {submission.ijazahFile
-            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.ijazahFile, title: 'Scan Ijazah SMA / MA' })}>Lihat Ijazah SMA</Button>
+          {submission.ijazahFile?.url
+            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.ijazahFile.url, title: 'Scan Ijazah SMA / MA' })}>Lihat Ijazah SMA</Button>
             : <span className="muted" style={{ fontSize: 13 }}>Ijazah SMA: tidak diunggah</span>}
-          {submission.admissionProofFile
-            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.admissionProofFile, title: 'Bukti SNBP / SNBT' })}>Lihat Bukti SNBP/SNBT</Button>
+          {submission.admissionProofFile?.url
+            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.admissionProofFile.url, title: 'Bukti SNBP / SNBT' })}>Lihat Bukti SNBP/SNBT</Button>
             : <span className="muted" style={{ fontSize: 13 }}>Bukti SNBP/SNBT: tidak diunggah</span>}
         </div>
         <VerifyBlock
@@ -324,8 +404,8 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
           <div className="kv" style={{ gridColumn: '1 / -1' }}>
             <div className="kv-label">Kartu Keluarga</div>
             <div className="kv-value">
-              {submission.kkFile
-                ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.kkFile, title: 'Kartu Keluarga' })}>Lihat Dokumen KK</Button>
+              {submission.kkFile?.url
+                ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.kkFile.url, title: 'Kartu Keluarga' })}>Lihat Dokumen KK</Button>
                 : <span className="muted">Tidak diunggah</span>}
             </div>
           </div>
@@ -605,15 +685,21 @@ function KonfigurasiPanel({ mobile }) {
 
   React.useEffect(() => { setDraft(JSON.parse(JSON.stringify(config))) }, [config])
 
-  const saveKey = (key, value) => {
+  const saveKey = async (key, value) => {
+    setSaving(true)
+    setSaveMsg('')
     try {
-      const existing = JSON.parse(localStorage.getItem('etos_config_overrides') || '{}')
-      existing[key] = value
-      localStorage.setItem('etos_config_overrides', JSON.stringify(existing))
-      refresh() // update context in-memory
-      setSaveMsg('Tersimpan! Berlaku setelah refresh.')
-    } catch (e) { setSaveMsg('Gagal: ' + e.message) }
-    setTimeout(() => setSaveMsg(''), 3000)
+      await saveConfigKey(key, value)
+      // Tidak perlu manual refresh — realtime subscription di FormConfigContext akan auto-refetch.
+      // Tapi panggil refresh() sebagai backup biar instan kelihatan di tab admin sendiri.
+      refresh()
+      setSaveMsg('Tersimpan ke Supabase. Berlaku untuk semua user.')
+    } catch (e) {
+      setSaveMsg('Gagal: ' + (e.message || 'Tidak diketahui'))
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSaveMsg(''), 4000)
+    }
   }
 
   const setDraftField = (path, value) => {

@@ -4,6 +4,8 @@ import '../styles.css'
 import { ILogo, IMoon, ISun, ILogout } from './Icons.jsx'
 import { GlassCard, Button } from './Primitives.jsx'
 import { AuthScreen } from './Auth.jsx'
+import { RegisterScreen } from './Register.jsx'
+import { TimelineGate, getCurrentPhase } from './TimelineGate.jsx'
 import { OnboardingModal } from './Onboarding.jsx'
 import { Dashboard } from './Dashboard.jsx'
 import { FormShell } from './FormShell.jsx'
@@ -12,23 +14,9 @@ import { Success } from './Success.jsx'
 import { AdminPanel } from './Admin.jsx'
 import { useFormConfig } from './lib/FormConfigContext.jsx'
 import { DEFAULT_CONFIG } from './lib/defaultConfig.js'
-
-const genUUID = () => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-    return crypto.randomUUID()
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
-  })
-}
-
-// Resolves a file input to a blob URL for the current session.
-// Returns existing URL unchanged when user hasn't re-selected the file.
-function resolveFile(fileObj) {
-  if (!fileObj) return null
-  if (fileObj.file) return { url: URL.createObjectURL(fileObj.file), name: fileObj.name, size: fileObj.size }
-  return fileObj
-}
+import { getSession, getProfile, onAuthStateChange, signOut } from './lib/auth.js'
+import { useApplicant } from './lib/applicant.js'
+import { upsertDocumentRow } from './lib/storage.js'
 
 // `timeline` defaults to DEFAULT_CONFIG.timeline when called without args (backward compat).
 export function getPeriod(timeline = DEFAULT_CONFIG.timeline) {
@@ -38,14 +26,13 @@ export function getPeriod(timeline = DEFAULT_CONFIG.timeline) {
   return 'ANNOUNCEMENT'
 }
 
-/* ─── Admin Login Gate ──────────────────────────────────── */
 /* ─── Admin Access Denied Screen ────────────────────────── */
-function AdminUnauthorized({ theme }) {
+function AdminUnauthorized({ theme, onBack }) {
   return (
     <div className="app-shell" data-theme={theme}>
       <div className="admin-login-wrap">
         <div className="admin-login-card" style={{ textAlign: 'center', padding: '40px 32px' }}>
-          <div style={{ 
+          <div style={{
             width: 80, height: 80, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-500)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px'
           }}>
@@ -55,9 +42,9 @@ function AdminUnauthorized({ theme }) {
           </div>
           <h1 className="admin-login-title" style={{ fontSize: 24 }}>Akses Terbatas</h1>
           <p className="admin-login-subtitle" style={{ marginBottom: 32 }}>
-            Email Anda tidak terdaftar sebagai administrator. Silakan login menggunakan akun yang berwenang.
+            Akun Anda tidak terdaftar sebagai administrator. Silakan login menggunakan akun yang berwenang.
           </p>
-          <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={() => window.location.href = '/'}>
+          <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={onBack}>
             Kembali ke Portal Utama
           </Button>
         </div>
@@ -69,16 +56,32 @@ function AdminUnauthorized({ theme }) {
 /* ─── Admin App Wrapper ─────────────────────────────────── */
 function AdminApp() {
   const [theme, setTheme] = React.useState(() => localStorage.getItem('etos_theme') || 'light')
-  const [authStatus, setAuthStatus] = React.useState('loading') // 'loading', 'authorized', 'unauthorized'
+  const [authStatus, setAuthStatus] = React.useState('loading') // 'loading' | 'authorized' | 'unauthorized'
   const [mobile, setMobile] = React.useState(window.innerWidth < 768)
 
   React.useEffect(() => {
-    try {
-      const auth = JSON.parse(localStorage.getItem('etos_dev_auth') || 'null')
-      setAuthStatus(auth?.role === 'admin' ? 'authorized' : 'unauthorized')
-    } catch {
-      setAuthStatus('unauthorized')
+    let cancelled = false
+
+    const checkAdmin = async () => {
+      try {
+        const session = await getSession()
+        if (cancelled) return
+        if (!session) { setAuthStatus('unauthorized'); return }
+        const profile = await getProfile()
+        if (cancelled) return
+        setAuthStatus(profile?.role === 'admin' ? 'authorized' : 'unauthorized')
+      } catch {
+        if (!cancelled) setAuthStatus('unauthorized')
+      }
     }
+    checkAdmin()
+
+    // Re-check kalau auth state berubah (logout dari tab lain, dll)
+    const unsubscribe = onAuthStateChange(({ event }) => {
+      if (event === 'SIGNED_OUT') setAuthStatus('unauthorized')
+      else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') checkAdmin()
+    })
+    return () => { cancelled = true; unsubscribe() }
   }, [])
 
   React.useEffect(() => {
@@ -92,8 +95,8 @@ function AdminApp() {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  const handleLogout = () => {
-    localStorage.removeItem('etos_dev_auth')
+  const handleLogout = async () => {
+    try { await signOut() } catch { /* ignore */ }
     window.location.href = '/'
   }
 
@@ -109,7 +112,7 @@ function AdminApp() {
   }
 
   if (authStatus === 'unauthorized') {
-    return <AdminUnauthorized theme={theme} />
+    return <AdminUnauthorized theme={theme} onBack={() => { window.location.href = '/' }} />
   }
 
   return (
@@ -146,18 +149,22 @@ function AdminApp() {
 
 
 export default function App() {
-  // Route to admin if on /admin path
+  // Route to admin if on /admin path — admin bypass TimelineGate karena admin
+  // butuh akses panel kapan saja (untuk ubah timeline, dll).
   const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname === '/admin/'
   if (isAdminRoute) return <AdminApp />
 
   const { config, loading: configLoading } = useFormConfig()
-  const [screen, setScreen] = React.useState('loading')
+  const [session, setSession] = React.useState(null)
+  const [sessionLoading, setSessionLoading] = React.useState(true)
+  const [screen, setScreen] = React.useState('loading')  // 'loading'|'auth'|'register'|'onboarding'|'dashboard'|'form'|'review'|'success'
   const [step, setStep] = React.useState(() => Number(localStorage.getItem('etos_step')) || 1)
   const [theme, setTheme] = React.useState(() => localStorage.getItem('etos_theme') || 'light')
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false)
-  const [showClosedModal, setShowClosedModal] = React.useState(false)
   const [mobile, setMobile] = React.useState(window.innerWidth < 768)
   const currentPeriod = getPeriod(config.timeline)
+  const currentPhase  = getCurrentPhase(config.timeline)
+  const isRegistrationClosed = currentPhase === 'POST_REGISTRATION'
 
   React.useEffect(() => {
     const handleResize = () => setMobile(window.innerWidth < 768)
@@ -165,107 +172,113 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const [form, setForm] = React.useState(() => {
-    const saved = localStorage.getItem('etos_form')
-    try {
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        // Blob URLs tidak valid setelah reload — bersihkan semua file fields
-        const stripBlob = (f) => f?.url?.startsWith('blob:') ? null : f
-        parsed.photoFile          = stripBlob(parsed.photoFile)
-        parsed.kkFile             = stripBlob(parsed.kkFile)
-        parsed.admissionProofFile = stripBlob(parsed.admissionProofFile)
-        parsed.ijazahFile         = stripBlob(parsed.ijazahFile)
-        parsed.housePhotoFile     = stripBlob(parsed.housePhotoFile)
-        parsed.kitchenPhotoFile   = stripBlob(parsed.kitchenPhotoFile)
-        return parsed
-      }
-    } catch { }
-    return { ...BLANK_FORM }
-  })
-
-  const setField = React.useCallback((k, v) => {
-    setForm((f) => ({ ...f, [k]: v }))
-  }, [])
+  // ─── Data layer: useApplicant() handle load + autosave ke Supabase ───
+  const {
+    form,
+    setForm,
+    setField,
+    applicantId,
+    isLoaded: applicantLoaded,
+    status: saveStatus,
+    lastError: saveError,
+    save: saveApplicant,
+    submit: submitApplicant,
+  } = useApplicant({ session, enabled: !!session })
 
   React.useEffect(() => { localStorage.setItem('etos_step', String(step)) }, [step])
   React.useEffect(() => {
     localStorage.setItem('etos_theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
-  React.useEffect(() => {
-    try { localStorage.setItem('etos_form', JSON.stringify(form)) } catch { }
-  }, [form])
 
+  // ─── Supabase session bootstrap + listener ────────────────
   React.useEffect(() => {
-    let auth = null
-    try { auth = JSON.parse(localStorage.getItem('etos_dev_auth') || 'null') } catch { }
+    let cancelled = false
 
-    if (!auth || auth.role !== 'user') {
-      setScreen('auth')
-      return
+    const bootstrap = async () => {
+      try {
+        const s = await getSession()
+        if (!cancelled) {
+          setSession(s)
+          setSessionLoading(false)
+        }
+      } catch {
+        if (!cancelled) {
+          setSession(null)
+          setSessionLoading(false)
+        }
+      }
     }
+    bootstrap()
 
-    // Dev user: restore from saved form — skip onboarding if province already set
-    const hasDraft = form.province || form.is_submitted
-    if (hasDraft) setScreen('dashboard')
-    else setScreen('onboarding')
-  }, []) // Stable effect, runs once on mount
+    const unsubscribe = onAuthStateChange(({ event, session: newSession }) => {
+      setSession(newSession)
+      if (event === 'SIGNED_OUT') setScreen('auth')
+    })
 
+    return () => { cancelled = true; unsubscribe() }
+  }, [])
+
+  // ─── Decide initial screen setelah session, config, & applicant data siap ──
+  React.useEffect(() => {
+    if (sessionLoading || configLoading) return
+    // Jika sudah login tapi data applicant belum ter-load, tunggu dulu
+    if (session && !applicantLoaded) return
+
+    setScreen(prev => {
+      if (prev !== 'loading') return prev
+      if (!session) return 'auth'
+      const hasDraft = form.province || form.is_submitted
+      return hasDraft ? 'dashboard' : 'onboarding'
+    })
+  }, [sessionLoading, configLoading, session, applicantLoaded, form.province, form.is_submitted])
+
+  // Saat session berubah dari null → ada (user baru login), trigger transisi
+  React.useEffect(() => {
+    if (sessionLoading || configLoading) return
+    if (!session || !applicantLoaded) return
+    if (screen === 'auth' || screen === 'register') {
+      const hasDraft = form.province || form.is_submitted
+      setScreen(hasDraft ? 'dashboard' : 'onboarding')
+    }
+  }, [session, applicantLoaded, sessionLoading, configLoading, screen, form.province, form.is_submitted])
 
   const handleLogout = async () => {
-    // 1. Tutup modal konfirmasi dulu biar user merasa ada "reaksi" instan
     setShowLogoutConfirm(false)
-    
     try {
-      // Hapus sesi auth saja — form & submissions tetap tersimpan
+      // Cleanup legacy keys + session storage
       const keysToRemove = [
-        'etos_dev_auth',
+        'etos_form',                  // legacy form storage (Fase 3)
         'etos_form_backup',
+        'etos_submissions',           // legacy admin storage (Fase 3)
         'etos_confetti_shown_full',
         'etos_confetti_shown_minimal',
       ]
       keysToRemove.forEach(k => localStorage.removeItem(k))
       sessionStorage.clear()
-
-      // 5. Paksa refresh ke halaman auth agar state bersih total
-      window.location.href = '/' 
+      await signOut()
+      window.location.href = '/'
     } catch (e) {
       console.error('Logout error:', e)
-      // Jika error, paksa reload saja sebagai fallback terakhir
       window.location.href = '/'
     }
   }
 
 
-  // Pure localStorage save — resolves file inputs to blob URLs for current session
-  const saveProgressToDb = (customForm = null) => {
-    const activeForm = customForm || form
-
-    const photoResolved      = resolveFile(activeForm.photoFile)
-    const kkResolved         = resolveFile(activeForm.kkFile)
-    const admissionResolved  = resolveFile(activeForm.admissionProofFile)
-
-    if (!customForm) {
-      if (photoResolved !== activeForm.photoFile)     setField('photoFile',         photoResolved)
-      if (kkResolved !== activeForm.kkFile)           setField('kkFile',            kkResolved)
-      if (admissionResolved !== activeForm.admissionProofFile) setField('admissionProofFile', admissionResolved)
-    }
-
+  // saveProgressToDb — shim untuk FormShell.onSave: trigger save scalar fields
+  // ke Supabase (bypass debounce). File fields sudah ke-upload langsung di
+  // Onboarding/FormSteps (lihat lib/storage.js), shim ini hanya untuk text data.
+  const saveProgressToDb = async (customForm = null) => {
+    try { await saveApplicant(customForm) } catch { /* error di-surface lewat saveError */ }
     const now = new Date()
-    const timeStr = `Hari ini, ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`
-    if (!customForm) setField('lastSaved', timeStr)
-
-    return Promise.resolve({
-      fotoProfilUrl:    photoResolved?.url || null,
-      kkFileUrl:        kkResolved?.url || null,
-      admissionProofUrl: admissionResolved?.url || null,
-      timeStr,
-    })
+    return {
+      timeStr: `Hari ini, ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`,
+    }
   }
 
   let content
-  if (screen === 'loading' || configLoading) {
+  const stillLoading = screen === 'loading' || sessionLoading || configLoading || (session && !applicantLoaded)
+  if (stillLoading) {
     content = (
       <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
         <div className="spinner" style={{ width: 40, height: 40, borderThickness: 3, color: 'var(--tosca-600)' }}></div>
@@ -273,14 +286,33 @@ export default function App() {
       </div>
     )
   } else if (screen === 'auth') {
-    content = <AuthScreen onAuthenticated={() => setScreen((form.province || form.is_submitted) ? 'dashboard' : 'onboarding')} mobile={mobile} />
+    content = (
+      <AuthScreen
+        onAuthenticated={() => { /* state transition handled by session listener */ }}
+        onSwitchToRegister={() => setScreen('register')}
+        mobile={mobile}
+      />
+    )
+  } else if (screen === 'register') {
+    // Jika registrasi sudah ditutup, redirect ke login (defensive — TimelineGate juga handle)
+    if (isRegistrationClosed) {
+      content = (
+        <AuthScreen
+          onAuthenticated={() => {}}
+          onSwitchToRegister={() => {}}
+          mobile={mobile}
+        />
+      )
+    } else {
+      content = <RegisterScreen onSwitchToLogin={() => setScreen('auth')} mobile={mobile} />
+    }
   } else if (screen === 'onboarding' || screen === 'dashboard') {
     const isFormLocked = form.status === 'approved' || form.status === 'rejected'
     content = <Dashboard form={form} mobile={mobile} currentPeriod={currentPeriod} cfg={config}
       onContinue={(s) => { if (!isFormLocked) { setStep(s); setScreen('form') } }}
       onJumpStep={(s) => { if (!isFormLocked) { setStep(s); setScreen('form') } }} />
   } else if (screen === 'form') {
-    content = <FormShell form={form} setField={setField}
+    content = <FormShell form={form} setField={setField} applicantId={applicantId}
       step={step} setStep={setStep}
       stepperVariant="default"
       onSave={saveProgressToDb}
@@ -290,35 +322,17 @@ export default function App() {
       currentPeriod={currentPeriod} />
   } else if (screen === 'review') {
     const handleSubmit = async () => {
-      const num = 'ETOS-26-' + genUUID().replace(/-/g, '').substring(0, 8).toUpperCase()
-      const formatted = new Intl.DateTimeFormat('id-ID', {
-        timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short',
-        year: 'numeric', hour: '2-digit', minute: '2-digit',
-      }).format(new Date()).replace(/\./g, '') + ' WIB'
-
-      const localId = form._localId || genUUID()
-
-      const submittedEntry = {
-        ...form,
-        _localId:           localId,
-        registrationNumber: num,
-        submittedAt:        formatted,
-        is_submitted:       true,
-        status:             'pending',
-      }
-
-      // Best-effort localStorage save — failure must not block the success screen
       try {
-        const existing = JSON.parse(localStorage.getItem('etos_submissions') || '[]')
-        const idx = existing.findIndex(s => s._localId === localId)
-        if (idx >= 0) existing[idx] = submittedEntry
-        else existing.push(submittedEntry)
-        localStorage.setItem('etos_submissions', JSON.stringify(existing))
-      } catch { /* quota / serialisation error — ignore */ }
-
-      // Always transition to success after saving state
-      setForm(f => ({ ...f, _localId: localId, registrationNumber: num, submittedAt: formatted, is_submitted: true }))
-      setScreen('success')
+        // 1. Save dulu state terakhir biar applicant row up-to-date
+        await saveApplicant()
+        // 2. UPDATE is_submitted=true → trigger DB generate reg number + queue email
+        await submitApplicant()
+        // 3. Transition ke success (form sudah berisi reg number dari DB)
+        setScreen('success')
+      } catch (err) {
+        // Surface error ke user
+        alert('Gagal submit pendaftaran:\n\n' + (err.message || 'Tidak diketahui'))
+      }
     }
     content = <Review form={form}
       onEdit={(s) => { setStep(s); setScreen('form') }}
@@ -332,9 +346,12 @@ export default function App() {
       currentPeriod={currentPeriod} />
   }
 
-  return (
+  // Header hanya tampil kalau user sudah login DAN bukan di halaman auth/register
+  const showHeader = session && screen !== 'auth' && screen !== 'register' && screen !== 'loading'
+
+  const innerApp = (
     <div className="app-shell" data-theme={theme}>
-      {screen !== 'auth' && (
+      {showHeader && (
         <header className="main-header">
           <div className="header-container">
             <div className="brand" onClick={() => setScreen('dashboard')} style={{ cursor: 'pointer' }}>
@@ -387,31 +404,11 @@ export default function App() {
         </div>
       )}
 
-      {showClosedModal && (
-        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
-          <GlassCard className="modal-card" style={{ maxWidth: 400, textAlign: 'center', padding: '40px 32px' }}>
-            <div style={{
-              width: 80, height: 80, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-500)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, margin: '0 auto 24px'
-            }}>
-              <div style={{ fontSize: 40 }}>🔒</div>
-            </div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12 }}>Pendaftaran Ditutup</h2>
-            <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--ink-600)', marginBottom: 32 }}>
-              Mohon maaf, masa pendaftaran Beasiswa Etos ID 2026 telah berakhir. Anda tidak dapat membuat akun atau pendaftaran baru saat ini.
-            </p>
-            <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={() => setShowClosedModal(false)}>
-              Mengerti
-            </Button>
-          </GlassCard>
-        </div>
-      )}
-
       {screen === 'onboarding' && (
         <OnboardingModal
           mobile={mobile}
           onPass={async ({ campus, studyProgram, proofFile, graduationYear, ijazahFile }) => {
-            // 1. Update state lokal (UI instan)
+            // 1. Update state lokal (UI instan, semua field) ──────────────
             setField('province', campus)
             setField('studyProgram', studyProgram)
             setField('admissionProofFile', proofFile)
@@ -420,25 +417,35 @@ export default function App() {
             setField('religion', 'Islam')
             setScreen('dashboard')
 
-            // 2. Kirim parsial ke Supabase di background
+            // 2. Kirim ke Supabase: INSERT applicant + UPSERT 2 documents row
             try {
               const partialForm = {
                 ...form,
-                province: campus,
-                studyProgram: studyProgram,
+                province:           campus,
+                studyProgram:       studyProgram,
+                graduationYear,
+                religion:           'Islam',
                 admissionProofFile: proofFile,
-                religion: 'Islam'
+                ijazahFile,
               }
-              const results = await saveProgressToDb(partialForm)
-              // Update state dengan URL permanen setelah upload selesai
-              if (results?.admissionProofUrl) {
-                setField('admissionProofFile', { 
-                  url: results.admissionProofUrl, 
-                  name: proofFile.name, 
-                  size: proofFile.size 
-                })
+              const id = await saveApplicant(partialForm)
+              if (id) {
+                // Upsert documents rows untuk 2 file yang sudah di-upload ke bucket
+                await Promise.all([
+                  ijazahFile?.path && upsertDocumentRow({
+                    applicantId: id, docType: 'ijazah',
+                    path: ijazahFile.path, name: ijazahFile.name,
+                    size: ijazahFile.size, mime: ijazahFile.mime,
+                  }),
+                  proofFile?.path && upsertDocumentRow({
+                    applicantId: id, docType: 'admission_proof',
+                    path: proofFile.path, name: proofFile.name,
+                    size: proofFile.size, mime: proofFile.mime,
+                  }),
+                ].filter(Boolean))
               }
-              if (results?.timeStr) setField('lastSaved', results.timeStr)
+              const now = new Date()
+              setField('lastSaved', `Hari ini, ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`)
             } catch (e) {
               console.error('Gagal sinkronisasi awal onboarding:', e)
             }
@@ -446,5 +453,13 @@ export default function App() {
           onDismiss={() => setScreen('auth')} />
       )}
     </div>
+  )
+
+  // Wrap dengan TimelineGate — render ComingSoon / RegistrationClosed kalau di luar window.
+  // Setelah login (atau saat user click "Login" di RegistrationClosed), gate auto-bypass.
+  return (
+    <TimelineGate session={session} mobile={mobile}>
+      {innerApp}
+    </TimelineGate>
   )
 }

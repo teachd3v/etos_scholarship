@@ -1,5 +1,6 @@
-// FormConfigContext.jsx — fetches form_config from Supabase and provides it app-wide.
-// Falls back to DEFAULT_CONFIG silently if DB is unavailable.
+// FormConfigContext.jsx — fetches form_config from Supabase + subscribe realtime.
+// Saat admin ubah timeline / selection_stages, semua client otomatis refetch.
+// Falls back to DEFAULT_CONFIG silently jika DB unavailable atau env Supabase belum di-set.
 import React from 'react'
 import { supabase } from './supabase.js'
 import { DEFAULT_CONFIG } from './defaultConfig.js'
@@ -10,40 +11,44 @@ const FormConfigContext = React.createContext({
   refresh: () => {},
 })
 
+// essay_config: hanya min/max yang bisa di-override — label/title/placeholder selalu dari default code.
+// Mencegah stale override menampilkan diksi lama.
+function mergeEssayConfig(overrideEssays) {
+  if (!Array.isArray(overrideEssays) || !Array.isArray(DEFAULT_CONFIG.essay_config)) {
+    return DEFAULT_CONFIG.essay_config
+  }
+  return DEFAULT_CONFIG.essay_config.map(def => {
+    const ov = overrideEssays.find(e => e.id === def.id)
+    if (!ov) return def
+    return { ...def, min: ov.min ?? def.min, max: ov.max ?? def.max }
+  })
+}
+
+function hasSupabaseEnv() {
+  const url = import.meta.env.VITE_SUPABASE_URL || ''
+  return Boolean(url) && !url.includes('placeholder')
+}
+
+// One-time cleanup: hapus key legacy `etos_config_overrides` dari localStorage.
+// Sejak admin save sudah pindah ke Supabase, key ini tidak lagi authoritative.
+function clearLegacyOverrides() {
+  try { localStorage.removeItem('etos_config_overrides') } catch { /* ignore */ }
+}
+
 export function FormConfigProvider({ children }) {
-  const [config, setConfig] = React.useState(DEFAULT_CONFIG)
+  const [config, setConfig]   = React.useState(DEFAULT_CONFIG)
   const [loading, setLoading] = React.useState(true)
 
-  // essay_config: only min/max can be overridden — label/title/placeholder always from default code.
-  // This prevents stale localStorage overrides from showing outdated diksi.
-  const mergeEssayConfig = (overrideEssays) => {
-    if (!Array.isArray(overrideEssays) || !Array.isArray(DEFAULT_CONFIG.essay_config)) return DEFAULT_CONFIG.essay_config
-    return DEFAULT_CONFIG.essay_config.map(def => {
-      const ov = overrideEssays.find(e => e.id === def.id)
-      if (!ov) return def
-      return { ...def, min: ov.min ?? def.min, max: ov.max ?? def.max }
-    })
-  }
-
   const fetchConfig = React.useCallback(async () => {
-    // 1. Cek localStorage overrides dulu (dari panel Konfigurasi Admin)
-    try {
-      const overrides = JSON.parse(localStorage.getItem('etos_config_overrides') || '{}')
-      if (Object.keys(overrides).length > 0) {
-        const merged = { ...DEFAULT_CONFIG, ...overrides }
-        if (overrides.essay_config) merged.essay_config = mergeEssayConfig(overrides.essay_config)
-        setConfig(merged)
-        setLoading(false)
-        return
-      }
-    } catch {}
+    // Bersihkan localStorage legacy override (idempotent — aman dipanggil berkali-kali)
+    clearLegacyOverrides()
 
-    // 2. Cek Supabase (skip jika URL placeholder)
-    const url = import.meta.env.VITE_SUPABASE_URL || ''
-    if (!url || url.includes('placeholder')) {
+    // Skip Supabase fetch kalau env belum di-set (mode demo offline)
+    if (!hasSupabaseEnv()) {
       setLoading(false)
       return
     }
+
     try {
       const { data, error } = await supabase
         .from('form_config')
@@ -57,14 +62,28 @@ export function FormConfigProvider({ children }) {
         }
         setConfig(merged)
       }
-    } catch {
-      // DB unavailable — defaults remain active
-    } finally {
-      setLoading(false)
-    }
+    } catch { /* DB unavailable — defaults remain */ }
+    finally { setLoading(false) }
   }, [])
 
+  // Initial fetch
   React.useEffect(() => { fetchConfig() }, [fetchConfig])
+
+  // Realtime subscription — refetch saat admin ubah form_config (dari user manapun, tab manapun)
+  React.useEffect(() => {
+    if (!hasSupabaseEnv()) return
+
+    const channel = supabase
+      .channel('form_config_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'form_config' },
+        () => { fetchConfig() }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchConfig])
 
   return (
     <FormConfigContext.Provider value={{ config, loading, refresh: fetchConfig }}>

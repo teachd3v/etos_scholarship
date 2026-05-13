@@ -8,7 +8,7 @@ import { useFormConfig } from './lib/FormConfigContext.jsx'
 
 const STEP_NAMES = ['', 'Data Pribadi', 'Keluarga', 'Kondisi Ekonomi', 'Prestasi', 'Organisasi', 'Esai']
 
-export function FormShell({ form, setField, step, setStep, stepperVariant, onSave, onDashboard, onReview, mobile, currentPeriod }) {
+export function FormShell({ form, setField, applicantId, step, setStep, stepperVariant, onSave, onDashboard, onReview, mobile, currentPeriod }) {
   const { config } = useFormConfig()
   const [errors, setErrors] = React.useState({})
   const [saving, setSaving] = React.useState(false)
@@ -100,7 +100,7 @@ export function FormShell({ form, setField, step, setStep, stepperVariant, onSav
             <Button variant="outline-tosca" onClick={() => window.location.reload()}>Kembali ke Dashboard</Button>
           </div>
         ) : (
-          StepComp && <StepComp form={form} setField={setField} errors={errors} mobile={mobile} />
+          StepComp && <StepComp form={form} setField={setField} errors={errors} mobile={mobile} applicantId={applicantId} />
         )}
       </GlassCard>
 

@@ -3,14 +3,15 @@ import React from 'react'
 import { TARGET_PROVINCES } from './FormState.jsx'
 import { ISparkle, IArrowRight, IFile, IX } from './Icons.jsx'
 import { GlassCard, Button, Field, Select, Checkbox } from './Primitives.jsx'
+import { uploadToBucket, getSignedUrl, validateFile } from './lib/storage.js'
 
 // ─── Reusable file upload field ──────────────────────────────────────
-function FileUploadField({ label, hint, file, error, onFile, onRemove, inputRef }) {
+function FileUploadField({ label, hint, file, error, uploading, onRemove, inputRef }) {
   return (
     <Field label={label} required hint={hint}>
       {!file ? (
-        <Button variant="outline-tosca" block onClick={() => inputRef.current?.click()} style={{ justifyContent: 'center' }}>
-          <IFile size={16} /> Pilih File
+        <Button variant="outline-tosca" block onClick={() => inputRef.current?.click()} loading={uploading} style={{ justifyContent: 'center' }}>
+          {!uploading && <IFile size={16} />} {uploading ? 'Mengupload…' : 'Pilih File'}
         </Button>
       ) : (
         <div style={{
@@ -21,9 +22,9 @@ function FileUploadField({ label, hint, file, error, onFile, onRemove, inputRef 
           <IFile size={16} style={{ color: 'var(--tosca-700)', flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-500)' }}>{(file.size / 1024).toFixed(0)} KB</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-500)' }}>{(file.size / 1024).toFixed(0)} KB · Tersimpan</div>
           </div>
-          <button onClick={onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-400)', padding: 4, display: 'flex' }}>
+          <button onClick={onRemove} disabled={uploading} style={{ background: 'none', border: 'none', cursor: uploading ? 'wait' : 'pointer', color: 'var(--ink-400)', padding: 4, display: 'flex' }}>
             <IX size={14} />
           </button>
         </div>
@@ -33,16 +34,31 @@ function FileUploadField({ label, hint, file, error, onFile, onRemove, inputRef 
   )
 }
 
-function makeFileHandler(setFile, setError, inputRef) {
-  const handle = (f) => {
+// Upload file langsung ke bucket. Documents row di-upsert nanti di App.jsx
+// setelah applicant row ter-insert via onPass handler.
+function makeOnboardingFileHandler({ docType, setFile, setError, setUploading, inputRef }) {
+  const handle = async (f) => {
     if (!f) return
-    if (f.size > 2_000_000) { setError('Ukuran file melebihi 2 MB. Pilih file yang lebih kecil.'); return }
+    const valErr = validateFile(docType, f)
+    if (valErr) { setError(valErr); return }
     setError(null)
-    setFile({ file: f, name: f.name, size: f.size, url: URL.createObjectURL(f) })
+    setUploading(true)
+    try {
+      const meta = await uploadToBucket({ file: f, docType })
+      const url  = await getSignedUrl(meta.path)
+      setFile({ url, name: meta.name, size: meta.size, path: meta.path, mime: meta.mime })
+    } catch (err) {
+      console.error('Upload error:', err)
+      setError(err.message || 'Upload gagal, coba lagi.')
+    } finally {
+      setUploading(false)
+    }
   }
   const remove = () => {
     setFile(null); setError(null)
     if (inputRef.current) inputRef.current.value = ''
+    // Catatan: file di bucket akan jadi orphan jika user remove sebelum submit
+    // onboarding. Acceptable trade-off untuk MVP. Bisa di-cleanup via cron nanti.
   }
   return { handle, remove }
 }
@@ -52,6 +68,7 @@ export function OnboardingModal({ onPass, onDismiss, mobile }) {
   const [graduationYear, setGraduationYear] = React.useState('')
   const [ijazahFile, setIjazahFile]         = React.useState(null)
   const [ijazahError, setIjazahError]       = React.useState(null)
+  const [ijazahUploading, setIjazahUploading] = React.useState(false)
   const ijazahRef = React.useRef(null)
 
   const [campus, setCampus]           = React.useState('')
@@ -59,14 +76,22 @@ export function OnboardingModal({ onPass, onDismiss, mobile }) {
   const [studyProgram, setStudyProgram] = React.useState('')
   const [proofFile, setProofFile]     = React.useState(null)
   const [proofError, setProofError]   = React.useState(null)
+  const [proofUploading, setProofUploading] = React.useState(false)
   const proofRef = React.useRef(null)
 
   const [isMuslim, setIsMuslim] = React.useState(false)
 
-  const ijazah = makeFileHandler(setIjazahFile, setIjazahError, ijazahRef)
-  const proof  = makeFileHandler(setProofFile,  setProofError,  proofRef)
+  const ijazah = makeOnboardingFileHandler({
+    docType: 'ijazah',
+    setFile: setIjazahFile, setError: setIjazahError, setUploading: setIjazahUploading, inputRef: ijazahRef,
+  })
+  const proof = makeOnboardingFileHandler({
+    docType: 'admission_proof',
+    setFile: setProofFile, setError: setProofError, setUploading: setProofUploading, inputRef: proofRef,
+  })
 
-  const canContinue = graduationYear && ijazahFile && campus && isS1 && studyProgram.trim() && proofFile && isMuslim
+  const anyUploading = ijazahUploading || proofUploading
+  const canContinue  = !anyUploading && graduationYear && ijazahFile && campus && isS1 && studyProgram.trim() && proofFile && isMuslim
 
   const handleContinue = () => {
     if (!canContinue) return
@@ -104,7 +129,7 @@ export function OnboardingModal({ onPass, onDismiss, mobile }) {
             hint="Scan atau foto ijazah — PDF, JPG, PNG — maks. 2 MB"
             file={ijazahFile}
             error={ijazahError}
-            onFile={ijazah.handle}
+            uploading={ijazahUploading}
             onRemove={ijazah.remove}
             inputRef={ijazahRef}
           />
@@ -146,7 +171,7 @@ export function OnboardingModal({ onPass, onDismiss, mobile }) {
                 hint="Format: PDF, JPG, PNG — maks. 2 MB"
                 file={proofFile}
                 error={proofError}
-                onFile={proof.handle}
+                uploading={proofUploading}
                 onRemove={proof.remove}
                 inputRef={proofRef}
               />
