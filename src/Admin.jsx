@@ -514,32 +514,11 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tosca-700)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.05em' }}>Status Kelayakan</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <PriorityPill priority={submission.hkPriority} />
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-700)' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink-700)' }}>
                   GAP: {formatRp(submission.hkGap)}
                 </div>
-                </div>
-
-                {/* Rincian 7 Dimensi */}
-                <div style={{ marginTop: 24 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '0.05em' }}>Rincian 7 Dimensi (Standar BAZNAS)</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {[
-                    ['Ibadah',      submission.dimIbadah],
-                    ['Pangan',      submission.dimPangan],
-                    ['Pakaian',     submission.dimPakaian],
-                    ['Tempat Tinggal', submission.dimTempatTinggal],
-                    ['Kesehatan',   submission.dimKesehatan],
-                    ['Pendidikan',  submission.dimPendidikan],
-                    ['Transportasi', submission.dimTransportasi],
-                  ].map(([label, val]) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, paddingBottom: 4, borderBottom: '1px solid var(--tosca-100)' }}>
-                      <span style={{ color: 'var(--ink-600)' }}>{label}</span>
-                      <span style={{ fontWeight: 500, color: 'var(--ink-800)' }}>{formatRp(val)}</span>
-                    </div>
-                  ))}
-                </div>
-                </div>
-                </div>
+              </div>
+              
               {/* Rincian 7 Dimensi */}
               <div style={{ marginTop: 24 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '0.05em' }}>Rincian 7 Dimensi (Standar BAZNAS)</div>
