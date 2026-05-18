@@ -72,6 +72,14 @@ function mapApplicantRowToSubmission(row, achievements = [], organizations = [],
     grandScore:         row.grand_score,
     skorPrestasi:       row.skor_prestasi,
     skorOrganisasi:     row.skor_organisasi,
+    // Map rincian 7 dimensi
+    dimIbadah:          row.dim_ibadah,
+    dimPangan:          row.dim_pangan,
+    dimPakaian:         row.dim_pakaian,
+    dimTempatTinggal:   row.dim_tempat_tinggal,
+    dimKesehatan:       row.dim_kesehatan,
+    dimPendidikan:      row.dim_pendidikan,
+    dimTransportasi:    row.dim_transportasi,
   }
   // Inject documents
   for (const doc of documents || []) {
@@ -500,18 +508,61 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
 
       {/* ── Analisis Had Kifayah ── */}
       <SectionCard title="Analisis Ekonomi & Had Kifayah">
-        <div style={{ padding: '16px', background: 'linear-gradient(135deg, var(--tosca-50) 0%, #fff 100%)', borderRadius: 12, border: '1px solid var(--tosca-200)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 24 }}>
+        <div style={{ padding: '20px', background: 'linear-gradient(135deg, var(--tosca-50) 0%, #fff 100%)', borderRadius: 14, border: '1px solid var(--tosca-200)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 32 }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tosca-700)', textTransform: 'uppercase', marginBottom: 12 }}>Status Kelayakan</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tosca-700)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.05em' }}>Status Kelayakan</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <PriorityPill priority={submission.hkPriority} />
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-700)' }}>
                   GAP: {formatRp(submission.hkGap)}
                 </div>
+                </div>
+
+                {/* Rincian 7 Dimensi */}
+                <div style={{ marginTop: 24 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '0.05em' }}>Rincian 7 Dimensi (Standar BAZNAS)</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {[
+                    ['Ibadah',      submission.dimIbadah],
+                    ['Pangan',      submission.dimPangan],
+                    ['Pakaian',     submission.dimPakaian],
+                    ['Tempat Tinggal', submission.dimTempatTinggal],
+                    ['Kesehatan',   submission.dimKesehatan],
+                    ['Pendidikan',  submission.dimPendidikan],
+                    ['Transportasi', submission.dimTransportasi],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, paddingBottom: 4, borderBottom: '1px solid var(--tosca-100)' }}>
+                      <span style={{ color: 'var(--ink-600)' }}>{label}</span>
+                      <span style={{ fontWeight: 500, color: 'var(--ink-800)' }}>{formatRp(val)}</span>
+                    </div>
+                  ))}
+                </div>
+                </div>
+                </div>
+              {/* Rincian 7 Dimensi */}
+              <div style={{ marginTop: 24 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '0.05em' }}>Rincian 7 Dimensi (Standar BAZNAS)</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {[
+                    ['Ibadah',      submission.dimIbadah],
+                    ['Pangan',      submission.dimPangan],
+                    ['Pakaian',     submission.dimPakaian],
+                    ['Tempat Tinggal', submission.dimTempatTinggal],
+                    ['Kesehatan',   submission.dimKesehatan],
+                    ['Pendidikan',  submission.dimPendidikan],
+                    ['Transportasi', submission.dimTransportasi],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, paddingBottom: 4, borderBottom: '1px solid var(--tosca-100)' }}>
+                      <span style={{ color: 'var(--ink-600)' }}>{label}</span>
+                      <span style={{ fontWeight: 500, color: 'var(--ink-800)' }}>{formatRp(val)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, justifyContent: 'center', background: 'rgba(255,255,255,0.5)', padding: 16, borderRadius: 12, border: '1px solid var(--tosca-100)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <span style={{ color: 'var(--ink-500)' }}>Total Kebutuhan (HK)</span>
                 <span style={{ fontWeight: 600 }}>{formatRp(submission.totalHadKifayah)}</span>
@@ -521,10 +572,13 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
                 <span style={{ fontWeight: 600 }}>{formatRp(submission.totalIncome)}</span>
               </div>
               <div style={{ height: 1, background: 'var(--tosca-200)', margin: '4px 0' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--tosca-700)', fontWeight: 700 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, color: 'var(--tosca-700)', fontWeight: 800 }}>
                 <span>Selisih (Defisit)</span>
                 <span>{formatRp(submission.hkGap)}</span>
               </div>
+              <p style={{ fontSize: 11, color: 'var(--ink-400)', marginTop: 8, fontStyle: 'italic', lineHeight: 1.4 }}>
+                *Kalkulasi otomatis berdasarkan standar biaya hidup Provinsi {submission.domisiliProvinsi || submission.province}.
+              </p>
             </div>
           </div>
         </div>
@@ -1031,9 +1085,14 @@ function PendaftarPanel({ mobile }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{s.fullName || '—'}</div>
                     <PriorityPill priority={s.hkPriority} />
-                    {(s.grandScore > 0 || s.skorPrestasi > 0 || s.skorOrganisasi > 0) && (
-                      <span className="pill pill-ink" style={{ fontSize: 10, background: 'var(--ink-800)', color: '#fff' }}>
-                        SKOR: {s.grandScore || 0}
+                    {s.skorPrestasi > 0 && (
+                      <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--tosca-600)', color: '#fff' }}>
+                        P: {s.skorPrestasi}
+                      </span>
+                    )}
+                    {s.skorOrganisasi > 0 && (
+                      <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--amber-600)', color: '#fff' }}>
+                        O: {s.skorOrganisasi}
                       </span>
                     )}
                   </div>
