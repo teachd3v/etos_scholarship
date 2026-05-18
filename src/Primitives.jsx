@@ -97,7 +97,22 @@ export function Input({ error, onChange, type, autoComplete, ...rest }) {
   }
   return <input type={type} autoComplete={autoComplete} className={`input ${error ? 'has-error' : ''}`} onChange={handleChange} {...rest} />
 }
-export function Textarea({ error, ...rest }) { return <textarea className={`textarea ${error ? 'has-error' : ''}`} {...rest} /> }
+export function Textarea({ error, onChange, ...rest }) {
+  const handleChange = (e) => {
+    if (e.target.value) {
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      e.target.value = e.target.value.toUpperCase();
+      window.requestAnimationFrame(() => {
+        if(e.target.setSelectionRange && document.activeElement === e.target) {
+            e.target.setSelectionRange(start, end);
+        }
+      });
+    }
+    onChange && onChange(e);
+  }
+  return <textarea className={`textarea ${error ? 'has-error' : ''}`} onChange={handleChange} {...rest} />
+}
 export function Select({ error, children, ...rest }) { return <select className={`select ${error ? 'has-error' : ''}`} {...rest}>{children}</select> }
 
 export function Checkbox({ checked, onChange, children, disabled }) {

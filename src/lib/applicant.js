@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { supabase } from './supabase.js'
-import { BLANK_FORM } from '../FormState.jsx'
+import { BLANK_FORM, calculateScores, calculateHadKifayah } from '../FormState.jsx'
 import { loadApplicantDocuments } from './storage.js'
 
 // Mapping doc_type (DB) → field name (React form)
@@ -39,8 +39,6 @@ const STATE_ONLY_FIELDS = new Set([
   '_localId',           // legacy
   'achievements',       // tabel terpisah
   'organizations',      // tabel terpisah
-  'noAchievement',      // derived (achievements.length === 0)
-  'noOrganization',     // derived (organizations.length === 0)
   // Legacy income dropdown fields — kolom DB pakai *_amount BIGINT
   'fatherIncome', 'motherIncome',
 ])
@@ -99,6 +97,18 @@ const FIELD_MAP = {
   futurePlan:               'future_plan',
   contribution:             'contribution',
   consent:                  'consent',
+  noAchievement:            'no_achievement',
+  noOrganization:           'no_organization',
+  skorPrestasi:             'skor_prestasi',
+  skorOrganisasi:           'skor_organisasi',
+  grandScore:               'grand_score',
+  familyCountSelf:          'family_count_self',
+  familyCountFather:        'family_count_father',
+  familyCountMother:        'family_count_mother',
+  totalIncome:              'total_income',
+  totalHadKifayah:          'total_had_kifayah',
+  hkGap:                    'hk_gap',
+  hkPriority:               'hk_priority',
 }
 
 const REVERSE_FIELD_MAP = Object.fromEntries(
@@ -113,6 +123,7 @@ const INT_FIELDS = new Set([
   'siblings_high_school', 'siblings_elementary', 'grandparents_count',
   'vehicle_bike', 'vehicle_car', 'vehicle_other',
   'bpjs_active_count', 'bpjs_inactive_count',
+  'total_income', 'total_had_kifayah', 'hk_gap',
 ])
 
 function toNullableInt(v) {
@@ -128,6 +139,13 @@ export function formToDb(form) {
     if (FILE_FIELDS.has(k) || STATE_ONLY_FIELDS.has(k)) continue
     const col = FIELD_MAP[k]
     if (!col) continue
+
+    // Cegah error "check constraint" di DB saat auto-save (NIK/KK harus 16 digit)
+    if ((col === 'nik' || col === 'no_kk') && v) {
+      const clean = String(v).replace(/\D/g, '')
+      if (clean.length > 0 && clean.length !== 16) continue 
+    }
+
     if (INT_FIELDS.has(col)) {
       out[col] = toNullableInt(v)
     } else if (typeof v === 'string' && v.trim() === '') {
@@ -136,6 +154,18 @@ export function formToDb(form) {
       out[col] = v
     }
   }
+
+  // Hitung skoring otomatis sebelum simpan
+  const scores = calculateScores(form)
+  out.skor_prestasi   = scores.skor_prestasi
+  out.skor_organisasi = scores.skor_organisasi
+  out.grand_score     = scores.grand_score
+
+  // Injeksi otomatis komposisi keluarga dasar
+  out.family_count_self   = 1
+  out.family_count_father = form.fatherCondition === 'Hidup' ? 1 : 0
+  out.family_count_mother = form.motherCondition === 'Hidup' ? 1 : 0
+
   return out
 }
 
@@ -193,8 +223,8 @@ export async function loadApplicant() {
   if (!row) return null
 
   const [{ data: ach = [] }, { data: orgs = [] }, docs] = await Promise.all([
-    supabase.from('achievements').select('*').eq('applicant_id', row.id).order('sort_order'),
-    supabase.from('organizations').select('*').eq('applicant_id', row.id).order('sort_order'),
+    supabase.from('achievements').select('*').eq('applicant_id', row.id),
+    supabase.from('organizations').select('*').eq('applicant_id', row.id),
     loadApplicantDocuments(row.id),
   ])
 
@@ -212,8 +242,8 @@ export async function loadApplicant() {
     period:      o.period|| '',
     description: o.description || '',
   }))
-  form.noAchievement  = form.achievements.length === 0
-  form.noOrganization = form.organizations.length === 0
+  form.noAchievement  = false
+  form.noOrganization = false
 
   // Documents: map doc_type → form field
   for (const [docType, field] of Object.entries(DOC_TYPE_TO_FIELD)) {
@@ -232,6 +262,24 @@ export async function upsertApplicant(form) {
 
   const payload = formToDb(form)
   payload.user_id = user.id
+
+  // 1. Ambil data standar biaya berdasarkan provinsi domisili
+  if (form.domisiliProvinsi) {
+    const { data: std } = await supabase
+      .from('master_had_kifayah')
+      .select('*')
+      .eq('provinsi', form.domisiliProvinsi)
+      .maybeSingle()
+    
+    // 2. Jika standar ditemukan, jalankan mesin kalkulasi
+    if (std) {
+      const hk = calculateHadKifayah(form, std)
+      payload.total_income      = hk.total_income
+      payload.total_had_kifayah = hk.total_had_kifayah
+      payload.hk_gap            = hk.hk_gap
+      payload.hk_priority       = hk.hk_priority
+    }
+  }
 
   const { data, error } = await supabase
     .from('applicants')
@@ -270,7 +318,6 @@ export async function syncAchievements(applicantId, achievements = [], noAchieve
       rank:   a.rank  || 'Finalis / Juara Favorit',
       year:   a.year ? Number(a.year) : 2024,
       issuer: a.issuer?.trim() || null,
-      sort_order: idx,
     }))
   if (rows.length === 0) return
 
@@ -292,7 +339,6 @@ export async function syncOrganizations(applicantId, organizations = [], noOrgan
       role:        o.role  || 'Anggota / Staff',
       period:      o.period || '-',
       description: o.description?.trim() || null,
-      sort_order:  idx,
     }))
   if (rows.length === 0) return
 
@@ -303,14 +349,15 @@ export async function syncOrganizations(applicantId, organizations = [], noOrgan
 /** Mark applicant as submitted. DB trigger akan generate registration_number + queue email. */
 export async function submitApplicant(applicantId) {
   if (!applicantId) throw new Error('Applicant belum tersimpan.')
+  
   const { data, error } = await supabase
     .from('applicants')
     .update({ is_submitted: true })
     .eq('id', applicantId)
-    .select('id, registration_number, submitted_at, status')
+    .select()
     .single()
+
   if (error) {
-    // RAISE EXCEPTION dari trigger validate_before_submit muncul di sini
     throw new Error(error.message || 'Gagal submit pendaftaran.')
   }
   return data
@@ -348,6 +395,9 @@ export function useApplicant({ session, enabled = true }) {
         if (res) {
           setId(res.applicantId)
           setForm(f => ({ ...BLANK_FORM, ...f, ...res.form }))
+        } else {
+          // New applicant — auto-fill email from session
+          setForm(f => ({ ...f, email: session.user.email }))
         }
         setStatus('idle')
         isLoadedRef.current = true
@@ -373,7 +423,6 @@ export function useApplicant({ session, enabled = true }) {
   const save = React.useCallback(async (overrideForm = null) => {
     if (!session?.user) return null
     const targetForm = overrideForm || form
-    if (targetForm.is_submitted) return applicantId  // form locked
     setStatus('saving')
     try {
       const id = await upsertApplicant(targetForm)
@@ -443,7 +492,6 @@ export function useApplicant({ session, enabled = true }) {
   // ── Autosave scalar fields (debounced 1.5s) ──
   React.useEffect(() => {
     if (!enabled || !session?.user || !isLoadedRef.current) return
-    if (form.is_submitted) return  // form locked setelah submit
 
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
@@ -462,7 +510,6 @@ export function useApplicant({ session, enabled = true }) {
   // ── Sync achievements & organizations (debounced 1.5s, terpisah) ──
   React.useEffect(() => {
     if (!enabled || !applicantId || !isLoadedRef.current) return
-    if (form.is_submitted) return
 
     if (arrayTimer.current) clearTimeout(arrayTimer.current)
     arrayTimer.current = setTimeout(async () => {
@@ -480,7 +527,6 @@ export function useApplicant({ session, enabled = true }) {
   }, [
     applicantId,
     enabled,
-    form.is_submitted,
     form.achievements,
     form.organizations,
     form.noAchievement,

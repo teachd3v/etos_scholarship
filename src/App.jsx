@@ -17,6 +17,48 @@ import { DEFAULT_CONFIG } from './lib/defaultConfig.js'
 import { getSession, getProfile, onAuthStateChange, signOut } from './lib/auth.js'
 import { useApplicant } from './lib/applicant.js'
 import { upsertDocumentRow } from './lib/storage.js'
+import { IAlert, ICheckCircle } from './Icons.jsx'
+
+/* ─── Offline / Connection Banner ────────────────────────── */
+function ConnectionBanner({ status, lastError }) {
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine)
+
+  React.useEffect(() => {
+    const h1 = () => setIsOnline(true)
+    const h2 = () => setIsOnline(false)
+    window.addEventListener('online',  h1)
+    window.addEventListener('offline', h2)
+    return () => {
+      window.removeEventListener('online',  h1)
+      window.removeEventListener('offline', h2)
+    }
+  }, [])
+
+  if (isOnline && status !== 'error') return null
+
+  const isCritical = !isOnline || status === 'error'
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10002,
+      background: isOnline ? 'var(--danger-500)' : 'var(--ink-800)',
+      color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 600,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+      boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+      animation: 'slideDown 0.3s ease-out',
+    }}>
+      <IAlert size={16} />
+      <span>
+        {!isOnline 
+          ? 'Koneksi terputus. Perubahan Anda mungkin tidak tersimpan.' 
+          : `Gagal sinkronisasi: ${lastError || 'Masalah koneksi database.'}`}
+      </span>
+      <style>{`
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+      `}</style>
+    </div>
+  )
+}
 
 // `timeline` defaults to DEFAULT_CONFIG.timeline when called without args (backward compat).
 export function getPeriod(timeline = DEFAULT_CONFIG.timeline) {
@@ -117,6 +159,7 @@ function AdminApp() {
 
   return (
     <div className="app-shell app-shell--admin" data-theme={theme}>
+      <ConnectionBanner />
       <header className="main-header">
         <div className="header-container">
           <div className="brand" style={{ cursor: 'default' }}>
@@ -321,10 +364,10 @@ export default function App() {
       mobile={mobile}
       currentPeriod={currentPeriod} />
   } else if (screen === 'review') {
-    const handleSubmit = async () => {
+    const handleSubmit = async (consentValue) => {
       try {
         // 1. Save dulu state terakhir biar applicant row up-to-date
-        await saveApplicant()
+        await saveApplicant({ ...form, consent: consentValue })
         // 2. UPDATE is_submitted=true → trigger DB generate reg number + queue email
         await submitApplicant()
         // 3. Transition ke success (form sudah berisi reg number dari DB)
@@ -351,6 +394,7 @@ export default function App() {
 
   const innerApp = (
     <div className="app-shell" data-theme={theme}>
+      <ConnectionBanner status={saveStatus} lastError={saveError} />
       {showHeader && (
         <header className="main-header">
           <div className="header-container">

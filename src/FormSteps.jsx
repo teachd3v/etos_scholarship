@@ -160,8 +160,8 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
       </div>
       <Field label="Jenis kelamin" required error={errors.gender}>
         <Select value={form.gender} error={errors.gender} onChange={(e) => setField('gender', e.target.value)}>
-          <option value="">Pilih…</option>
-          {GENDER_OPTS.map((g) => <option key={g} value={g}>{g}</option>)}
+          <option value="">PILIH…</option>
+          {GENDER_OPTS.map((g) => <option key={g} value={g}>{g.toUpperCase()}</option>)}
         </Select>
       </Field>
       <Field label="Email" required error={errors.email}>
@@ -183,8 +183,8 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
           setField('domisiliKota', '')
           setField('domisiliKecamatan', '')
         }}>
-          <option value="">{provinces.length ? 'Pilih provinsi…' : 'Memuat…'}</option>
-          {provinces.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+          <option value="">{provinces.length ? 'PILIH PROVINSI…' : 'MEMUAT…'}</option>
+          {provinces.map(p => <option key={p.id} value={p.name}>{p.name.toUpperCase()}</option>)}
         </Select>
       </Field>
       <Field label="Domisili Kabupaten/Kota" required error={errors.domisiliKota}>
@@ -196,16 +196,16 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
             setField('domisiliKota', e.target.value)
             setField('domisiliKecamatan', '')
           }}>
-          <option value="">{!form.domisiliProvinsi ? 'Pilih provinsi dulu…' : regencies.length ? 'Pilih kabupaten/kota…' : 'Memuat…'}</option>
-          {regencies.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+          <option value="">{!form.domisiliProvinsi ? 'PILIH PROVINSI DULU…' : regencies.length ? 'PILIH KABUPATEN/KOTA…' : 'MEMUAT…'}</option>
+          {regencies.map(r => <option key={r.id} value={r.name}>{r.name.toUpperCase()}</option>)}
         </Select>
       </Field>
       <Field label="Domisili Kecamatan" required error={errors.domisiliKecamatan}>
         <Select value={form.domisiliKecamatan || ''} error={errors.domisiliKecamatan}
           disabled={!form.domisiliKota}
           onChange={(e) => setField('domisiliKecamatan', e.target.value)}>
-          <option value="">{!form.domisiliKota ? 'Pilih kabupaten/kota dulu…' : districts.length ? 'Pilih kecamatan…' : 'Memuat…'}</option>
-          {districts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+          <option value="">{!form.domisiliKota ? 'PILIH KABUPATEN/KOTA DULU…' : districts.length ? 'PILIH KECAMATAN…' : 'MEMUAT…'}</option>
+          {districts.map(d => <option key={d.id} value={d.name}>{d.name.toUpperCase()}</option>)}
         </Select>
       </Field>
       <Field label="Alamat domisili lengkap" required error={errors.address}>
@@ -249,8 +249,8 @@ function Step2Keluarga({ form, setField, errors, mobile, applicantId }) {
       {/* Status pernikahan */}
       <Field label="Status Pernikahan Orangtua" required error={errors.familyStatus}>
         <Select value={form.familyStatus} error={errors.familyStatus} onChange={(e) => setField('familyStatus', e.target.value)}>
-          <option value="">Pilih…</option>
-          {MARITAL_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+          <option value="">PILIH…</option>
+          {MARITAL_OPTS.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
         </Select>
       </Field>
 
@@ -269,14 +269,14 @@ function Step2Keluarga({ form, setField, errors, mobile, applicantId }) {
               if (v === 'Wafat') { setField('fatherJob', 'Tidak Bekerja'); setField('fatherJobOther', '') }
               else               { setField('fatherJob', '') }
             }}>
-              <option value="">Pilih…</option>
-              {CONDITION_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+              <option value="">PILIH…</option>
+              {CONDITION_OPTS.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
             </Select>
           </Field>
         </div>
         {form.fatherCondition === 'Wafat' ? (
           <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--ink-50)', border: '1px solid var(--ink-200)', fontSize: 13, color: 'var(--ink-500)' }}>
-            Pekerjaan otomatis: <strong>Tidak Bekerja</strong>
+            PEKERJAAN OTOMATIS: <strong>TIDAK BEKERJA</strong>
           </div>
         ) : (
           <>
@@ -286,8 +286,8 @@ function Step2Keluarga({ form, setField, errors, mobile, applicantId }) {
                 setField('fatherJob', v)
                 if (v !== 'Lainnya') setField('fatherJobOther', '')
               }}>
-                <option value="">Pilih…</option>
-                {jobOpts.map((j) => <option key={j} value={j}>{j}</option>)}
+                <option value="">PILIH…</option>
+                {jobOpts.map((j) => <option key={j} value={j}>{j.toUpperCase()}</option>)}
               </Select>
             </Field>
             {form.fatherJob === 'Lainnya' && (
@@ -317,14 +317,14 @@ function Step2Keluarga({ form, setField, errors, mobile, applicantId }) {
               if (v === 'Wafat') { setField('motherJob', 'Tidak Bekerja'); setField('motherJobOther', '') }
               else               { setField('motherJob', '') }
             }}>
-              <option value="">Pilih…</option>
-              {CONDITION_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+              <option value="">PILIH…</option>
+              {CONDITION_OPTS.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
             </Select>
           </Field>
         </div>
         {form.motherCondition === 'Wafat' ? (
           <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--ink-50)', border: '1px solid var(--ink-200)', fontSize: 13, color: 'var(--ink-500)' }}>
-            Pekerjaan otomatis: <strong>Tidak Bekerja</strong>
+            PEKERJAAN OTOMATIS: <strong>TIDAK BEKERJA</strong>
           </div>
         ) : (
           <>
@@ -334,8 +334,8 @@ function Step2Keluarga({ form, setField, errors, mobile, applicantId }) {
                 setField('motherJob', v)
                 if (v !== 'Lainnya') setField('motherJobOther', '')
               }}>
-                <option value="">Pilih…</option>
-                {jobOpts.map((j) => <option key={j} value={j}>{j}</option>)}
+                <option value="">PILIH…</option>
+                {jobOpts.map((j) => <option key={j} value={j}>{j.toUpperCase()}</option>)}
               </Select>
             </Field>
             {form.motherJob === 'Lainnya' && (
@@ -363,8 +363,8 @@ function Step2Keluarga({ form, setField, errors, mobile, applicantId }) {
               setField('guardianJob', v)
               if (v !== 'Lainnya') setField('guardianJobOther', '')
             }}>
-              <option value="">Pilih…</option>
-              {jobOpts.map((j) => <option key={j} value={j}>{j}</option>)}
+              <option value="">PILIH…</option>
+              {jobOpts.map((j) => <option key={j} value={j}>{j.toUpperCase()}</option>)}
             </Select>
           </Field>
         </div>
@@ -490,8 +490,8 @@ function Step3Ekonomi({ form, setField, errors, mobile, applicantId }) {
       {/* ── Penanggung kehidupan ── */}
       <Field label="Siapa yang menanggung kehidupanmu sehari-hari?" required error={errors.mainProvider}>
         <Select value={form.mainProvider} error={errors.mainProvider} onChange={(e) => setField('mainProvider', e.target.value)}>
-          <option value="">Pilih…</option>
-          {PROVIDER_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+          <option value="">PILIH…</option>
+          {PROVIDER_OPTS.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
         </Select>
       </Field>
 
@@ -534,14 +534,14 @@ function Step3Ekonomi({ form, setField, errors, mobile, applicantId }) {
         <div className="form-grid-2">
           <Field label="Status rumah saat ini" required error={errors.houseStatus}>
             <Select value={form.houseStatus} error={errors.houseStatus} onChange={(e) => setField('houseStatus', e.target.value)}>
-              <option value="">Pilih…</option>
-              {HOUSE_STATUS_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+              <option value="">PILIH…</option>
+              {HOUSE_STATUS_OPTS.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
             </Select>
           </Field>
           <Field label="Daya listrik rumah" required error={errors.electricPower}>
             <Select value={form.electricPower} error={errors.electricPower} onChange={(e) => setField('electricPower', e.target.value)}>
-              <option value="">Pilih…</option>
-              {ELECTRIC_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
+              <option value="">PILIH…</option>
+              {ELECTRIC_OPTS.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
             </Select>
           </Field>
         </div>
@@ -554,24 +554,6 @@ function Step3Ekonomi({ form, setField, errors, mobile, applicantId }) {
           <StepperRow label="Motor / roda 2"                      value={form.vehicleBike}  onChange={(v) => setField('vehicleBike', v)}  max={4} />
           <StepperRow label="Mobil / roda 3–4"                    value={form.vehicleCar}   onChange={(v) => setField('vehicleCar', v)}   max={4} />
           <StepperRow label="Kendaraan lainnya (perahu, speedboat, dll)" value={form.vehicleOther} onChange={(v) => setField('vehicleOther', v)} max={4} />
-        </div>
-      </div>
-
-      {/* ── Bantuan sosial ── */}
-      <div style={{ marginTop: 24 }}>
-        <SectionHeader title="Bantuan Sosial & BPJS" />
-        <div style={{ borderTop: '1px solid var(--ink-100)' }}>
-          <StepperRow label="Anggota keluarga aktif BPJS / PKH / KIS"     value={form.bpjsActiveCount}   onChange={(v) => setField('bpjsActiveCount', v)} />
-          <StepperRow label="Anggota keluarga non-aktif BPJS / PKH / KIS" value={form.bpjsInactiveCount} onChange={(v) => setField('bpjsInactiveCount', v)} />
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <Field label="Apakah kamu penerima KIP / KIP-K / Beasiswa Daerah / lainnya?" required error={errors.kipStatus}>
-            <Select value={form.kipStatus} error={errors.kipStatus} onChange={(e) => setField('kipStatus', e.target.value)}>
-              <option value="">Pilih…</option>
-              <option value="Ya">Ya</option>
-              <option value="Tidak">Tidak</option>
-            </Select>
-          </Field>
         </div>
       </div>
 
@@ -693,14 +675,14 @@ function Step4Prestasi({ form, setField, errors, mobile }) {
           <div className="form-grid-3">
             <Field label="Tingkat" required error={errors[`ach-${i}-level`]}>
               <Select value={a.level} error={errors[`ach-${i}-level`]} onChange={(e) => update(i, 'level', e.target.value)}>
-                <option value="">Pilih…</option>
-                {levelOpts.map(l => <option key={l} value={l}>{l}</option>)}
+                <option value="">PILIH…</option>
+                {levelOpts.map(l => <option key={l} value={l}>{l.toUpperCase()}</option>)}
               </Select>
             </Field>
             <Field label="Peringkat/Medali" required error={errors[`ach-${i}-rank`]}>
               <Select value={a.rank} error={errors[`ach-${i}-rank`]} onChange={(e) => update(i, 'rank', e.target.value)}>
-                <option value="">Pilih…</option>
-                {rankOpts.map(r => <option key={r} value={r}>{r}</option>)}
+                <option value="">PILIH…</option>
+                {rankOpts.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
               </Select>
             </Field>
             <Field label="Tahun" required error={errors[`ach-${i}-year`]}>
@@ -765,8 +747,8 @@ function Step5Organisasi({ form, setField, errors, mobile }) {
             </Field>
             <Field label="Peran/jabatan" required error={errors[`org-${i}-role`]}>
               <Select value={o.role} error={errors[`org-${i}-role`]} onChange={(e) => update(i, 'role', e.target.value)}>
-                <option value="">Pilih…</option>
-                {roleOpts.map(r => <option key={r} value={r}>{r}</option>)}
+                <option value="">PILIH…</option>
+                {roleOpts.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
               </Select>
             </Field>
           </div>

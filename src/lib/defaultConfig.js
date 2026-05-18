@@ -12,74 +12,74 @@ export const DEFAULT_CONFIG = {
   },
 
   target_universities: [
-    'Universitas Jambi',
-    'Universitas Tadulako',
-    'Universitas Andalas',
-    'Universitas Pattimura',
-    'Universitas Gadjah Mada',
+    'UNIVERSITAS JAMBI',
+    'UNIVERSITAS TADULAKO',
+    'UNIVERSITAS ANDALAS',
+    'UNIVERSITAS PATTIMURA',
+    'UNIVERSITAS GADJAH MADA',
   ],
 
   // ─── Step 2: Data Keluarga ───────────────────────────────────
   income_options: [
-    'Tidak berpenghasilan',
-    '< Rp 1.500.000',
-    'Rp 1.500.000 – Rp 3.000.000',
-    'Rp 3.000.000 – Rp 5.000.000',
-    '> Rp 5.000.000',
+    'TIDAK BERPENGHASILAN',
+    '< RP 1.500.000',
+    'RP 1.500.000 – RP 3.000.000',
+    'RP 3.000.000 – RP 5.000.000',
+    '> RP 5.000.000',
   ],
 
   job_options: [
-    'Tidak Bekerja',
-    'Ojek Online', 'Kurir Barang', 'Sopir Angkot', 'Kernet',
-    'Cleaning Service', 'ART & Pengasuh', 'Petugas Sampah',
-    'Pedagang Kaki Lima', 'Juru Parkir', 'Buruh Harian Lepas',
-    'Porter', 'Buruh Tani', 'Nelayan', 'Lainnya',
+    'TIDAK BEKERJA',
+    'OJEK ONLINE', 'KURIR BARANG', 'SOPIR ANGKOT', 'KERNET',
+    'CLEANING SERVICE', 'ART & PENGASUH', 'PETUGAS SAMPAH',
+    'PEDAGANG KAKI LIMA', 'JURU PARKIR', 'BURUH HARIAN LEPAS',
+    'PORTER', 'BURUH TANI', 'NELAYAN', 'LAINNYA',
   ],
 
   family_status_options: [
-    'Kedua orang tua masih hidup',
-    'Yatim (ayah meninggal)',
-    'Piatu (ibu meninggal)',
-    'Yatim piatu',
-    'Orang tua bercerai',
+    'KEDUA ORANG TUA MASIH HIDUP',
+    'YATIM (AYAH MENINGGAL)',
+    'PIATU (IBU MENINGGAL)',
+    'YATIM PIATU',
+    'ORANG TUA BERCERAI',
   ],
 
   // ─── Step 3: Kondisi Ekonomi ─────────────────────────────────
   house_options: [
-    'Milik sendiri',
-    'Sewa/kontrak',
-    'Menumpang keluarga',
+    'MILIK SENDIRI',
+    'SEWA/KONTRAK',
+    'MENUMPANG KELUARGA',
   ],
 
   kip_options: [
-    'Ya, penerima PIP',
-    'Terdaftar KIP-Kuliah',
-    'Bukan penerima',
+    'YA, PENERIMA PIP',
+    'TERDAFTAR KIP-KULIAH',
+    'BUKAN PENERIMA',
   ],
 
   bpjs_options: [
-    'PBI (Gratis dari Pemerintah)',
-    'Ya, terdaftar dan aktif',
-    'Ya, terdaftar tapi nonaktif',
-    'Tidak terdaftar',
+    'PBI (GRATIS DARI PEMERINTAH)',
+    'YA, TERDAFTAR DAN AKTIF',
+    'YA, TERDAFTAR TAPI NONAKTIF',
+    'TIDAK TERDAFTAR',
   ],
 
   // ─── Step 4: Prestasi ────────────────────────────────────────
   achievement_config: {
     max_items: 10,
     levels: [
-      'Internasional',
-      'Nasional',
-      'Provinsi',
-      'Kabupaten/Kota',
-      'Kecamatan',
-      'Sekolah',
+      'INTERNASIONAL',
+      'NASIONAL',
+      'PROVINSI',
+      'KABUPATEN/KOTA',
+      'KECAMATAN',
+      'SEKOLAH',
     ],
     ranks: [
-      'Juara 1 / Medali Emas',
-      'Juara 2 / Perak',
-      'Juara 3 / Perunggu',
-      'Finalis / Juara Favorit',
+      'JUARA 1 / MEDALI EMAS',
+      'JUARA 2 / PERAK',
+      'JUARA 3 / PERUNGGU',
+      'FINALIS / JUARA FAVORIT',
     ],
   },
 
@@ -87,9 +87,9 @@ export const DEFAULT_CONFIG = {
   organization_config: {
     max_items: 10,
     roles: [
-      'Ketua / Wakil Ketua',
-      'Pengurus Inti',
-      'Anggota / Staff',
+      'KETUA / WAKIL KETUA',
+      'PENGURUS INTI',
+      'ANGGOTA / STAFF',
     ],
   },
 

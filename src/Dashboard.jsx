@@ -165,11 +165,6 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                 <Button variant="primary" size="lg" onClick={() => onContinue && onContinue(isSubmitted ? 1 : nextStep)}>
                   {isSubmitted ? 'Ubah Data Pendaftar' : (pct > 0 ? `Lanjut Isikan (Step ${nextStep})` : 'Mari Mulai Daftar')} <IArrowRight size={16} />
                 </Button>
-                {!isSubmitted && (
-                  <Button variant="outline-tosca" size="lg" onClick={() => onJumpStep && onJumpStep(1)}>
-                    Cek Semua Tahapan
-                  </Button>
-                )}
               </>
             ) : (
               <Button variant="outline-tosca" size="lg" onClick={() => onContinue && onContinue(1)}>

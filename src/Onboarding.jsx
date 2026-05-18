@@ -2,7 +2,7 @@
 import React from 'react'
 import { TARGET_PROVINCES } from './FormState.jsx'
 import { ISparkle, IArrowRight, IFile, IX } from './Icons.jsx'
-import { GlassCard, Button, Field, Select, Checkbox } from './Primitives.jsx'
+import { GlassCard, Button, Field, Select, Checkbox, Input } from './Primitives.jsx'
 import { uploadToBucket, getSignedUrl, validateFile } from './lib/storage.js'
 
 // ─── Reusable file upload field ──────────────────────────────────────
@@ -137,8 +137,8 @@ export function OnboardingModal({ onPass, onDismiss, mobile }) {
           {/* C — Pilih Kampus */}
           <Field label="Kampus tujuan" required>
             <Select value={campus} onChange={(e) => setCampus(e.target.value)}>
-              <option value="">Pilih kampus…</option>
-              {TARGET_PROVINCES.map((k) => <option key={k} value={k}>{k}</option>)}
+              <option value="">PILIH KAMPUS…</option>
+              {TARGET_PROVINCES.map((k) => <option key={k} value={k}>{k.toUpperCase()}</option>)}
             </Select>
           </Field>
 
@@ -159,7 +159,7 @@ export function OnboardingModal({ onPass, onDismiss, mobile }) {
 
               {/* E — Program Studi */}
               <Field label="Program Studi" required>
-                <input className="input" value={studyProgram} onChange={(e) => setStudyProgram(e.target.value)}
+                <Input value={studyProgram} onChange={(e) => setStudyProgram(e.target.value)}
                   placeholder="Contoh: Teknik Informatika" />
               </Field>
 

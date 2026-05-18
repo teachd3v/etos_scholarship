@@ -24,8 +24,7 @@ export const BLANK_FORM = {
   siblingsHighSchool: 0, siblingsElementary: 0, grandparentsCount: 0,
   houseStatus: '', electricPower: '',
   vehicleBike: 0, vehicleCar: 0, vehicleOther: 0,
-  bpjsActiveCount: 0, bpjsInactiveCount: 0,
-  kipStatus: '', housePhotoFile: null, kitchenPhotoFile: null,
+  housePhotoFile: null, kitchenPhotoFile: null,
   noAchievement: false,
   noOrganization: false,
   achievements: [],
@@ -107,25 +106,32 @@ export function validateStep(step, form, cfg = DEFAULT_CONFIG) {
       set('guardianIncomeAmount', required(form.guardianIncomeAmount))
     set('houseStatus',    required(form.houseStatus))
     set('electricPower',  required(form.electricPower))
-    set('kipStatus',      required(form.kipStatus))
     set('housePhotoFile', required(form.housePhotoFile))
   }
 
-  if (step === 4 && !form.noAchievement) {
-    form.achievements.forEach((a, i) => {
-      if (!a.title) errs[`ach-${i}-title`] = 'Wajib'
-      if (!a.level) errs[`ach-${i}-level`] = 'Wajib'
-      if (!a.rank)  errs[`ach-${i}-rank`]  = 'Wajib'
-      if (!a.year)  errs[`ach-${i}-year`]  = 'Wajib'
-    })
+  if (step === 4) {
+    if (!form.noAchievement && form.achievements.length === 0) {
+      errs._list = 'Tambahkan minimal satu prestasi atau centang jika tidak ada.'
+    } else if (!form.noAchievement) {
+      form.achievements.forEach((a, i) => {
+        if (!a.title) errs[`ach-${i}-title`] = 'Wajib'
+        if (!a.level) errs[`ach-${i}-level`] = 'Wajib'
+        if (!a.rank)  errs[`ach-${i}-rank`]  = 'Wajib'
+        if (!a.year)  errs[`ach-${i}-year`]  = 'Wajib'
+      })
+    }
   }
 
-  if (step === 5 && !form.noOrganization) {
-    form.organizations.forEach((o, i) => {
-      if (!o.name)   errs[`org-${i}-name`]   = 'Wajib'
-      if (!o.role)   errs[`org-${i}-role`]   = 'Wajib'
-      if (!o.period) errs[`org-${i}-period`] = 'Wajib'
-    })
+  if (step === 5) {
+    if (!form.noOrganization && form.organizations.length === 0) {
+      errs._list = 'Tambahkan minimal satu organisasi atau centang jika tidak ada.'
+    } else if (!form.noOrganization) {
+      form.organizations.forEach((o, i) => {
+        if (!o.name)   errs[`org-${i}-name`]   = 'Wajib'
+        if (!o.role)   errs[`org-${i}-role`]   = 'Wajib'
+        if (!o.period) errs[`org-${i}-period`] = 'Wajib'
+      })
+    }
   }
 
   if (step === 6) {
@@ -170,6 +176,82 @@ export function completedSteps(form, cfg = DEFAULT_CONFIG) {
     }
   }
   return out
+}
+
+
+export function calculateHadKifayah(form, std) {
+  if (!std) return { total_income: 0, total_had_kifayah: 0, hk_gap: 0, hk_priority: 'BELUM TERHITUNG' }
+
+  // 1. Counting Anggota
+  const kkCount  = form.fatherCondition === 'Hidup' ? 1 : 0
+  const ak1Count = (form.motherCondition === 'Hidup' ? 1 : 0) + 
+                   (Number(form.adultSiblingsWorking) || 0) + 
+                   (Number(form.adultSiblingsNotWorking) || 0) + 
+                   (Number(form.grandparentsCount) || 0)
+  const ak2Count = 1 + (Number(form.siblingsHighSchool) || 0) // Pendaftar + SMA
+  const ak3Count = (Number(form.siblingsElementary) || 0)
+  
+  const totalOrang = kkCount + ak1Count + ak2Count + ak3Count
+
+  // 2. Rumus Biaya Individu (Pangan + Ibadah + Pakaian)
+  const costIndividu = 
+    (BigInt(kkCount)  * (BigInt(std.food_kk)   + BigInt(std.prayer_kk)   + BigInt(std.clothes_kk))) +
+    (BigInt(ak1Count) * (BigInt(std.food_ak1)  + BigInt(std.prayer_ak1)  + BigInt(std.clothes_ak1))) +
+    (BigInt(ak2Count) * (BigInt(std.food_ak2)  + BigInt(std.prayer_ak2)  + BigInt(std.clothes_ak2))) +
+    (BigInt(ak3Count) * (BigInt(std.food_ak3)  + BigInt(std.prayer_ak3)  + BigInt(std.clothes_ak3)))
+
+  // 3. Umum (Transport + Kesehatan) — Per orang
+  const costUmum = BigInt(totalOrang) * (BigInt(std.transport) + BigInt(std.health))
+
+  // 4. Pendidikan — Hanya AK2 + AK3
+  const costEdu = BigInt(ak2Count + ak3Count) * BigInt(std.education)
+
+  // 5. Fasilitas Rumah & Listrik (Pengali)
+  const hStat = (form.houseStatus || '').toUpperCase()
+  let houseMult = 0
+  if (hStat === 'SEWA/KONTRAK') houseMult = 1
+  if (hStat === 'MENUMPANG KELUARGA') houseMult = 2
+
+  const pStat = (form.electricPower || '').toUpperCase()
+  let powerMult = 1
+  if (pStat === '900 WATT') powerMult = 2
+  if (pStat === '>900 WATT') powerMult = 3
+
+  const costFacility = (BigInt(std.own_house) * BigInt(houseMult)) + (BigInt(std.power_house) * BigInt(powerMult))
+
+  // 6. Total Had Kifayah
+  const total_had_kifayah = Number(costIndividu + costUmum + costEdu + costFacility)
+
+  // 7. Total Pendapatan
+  const total_income = (Number(form.fatherIncomeAmount) || 0) + 
+                       (Number(form.motherIncomeAmount) || 0) + 
+                       (Number(form.guardianIncomeAmount) || 0)
+
+  // 8. Gap & Priority
+  const hk_gap = total_had_kifayah - total_income
+  
+  let hk_priority = 'MAMPU'
+  if (hk_gap > 2500000) {
+    hk_priority = 'PRIORITAS 1'
+  } else if (hk_gap >= 1000000) {
+    hk_priority = 'PRIORITAS 2'
+  } else if (hk_gap > 0) {
+    hk_priority = 'PRIORITAS 3'
+  }
+
+  return { total_income, total_had_kifayah, hk_gap, hk_priority }
+}
+
+
+export function calculateScores(form) {
+  const achCount = (form.achievements || []).filter(a => a.title && a.title.trim() !== '').length
+  const orgCount = (form.organizations || []).filter(o => o.name && o.name.trim() !== '').length
+  
+  const skor_prestasi   = Math.min(100, achCount * 20)
+  const skor_organisasi = Math.min(100, orgCount * 20)
+  const grand_score     = skor_prestasi + skor_organisasi
+
+  return { skor_prestasi, skor_organisasi, grand_score }
 }
 
 

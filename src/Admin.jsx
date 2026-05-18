@@ -6,24 +6,25 @@ import { saveConfigKey } from './lib/formConfig.js'
 import { supabase } from './lib/supabase.js'
 import { dbToForm } from './lib/applicant.js'
 import { getSignedUrls } from './lib/storage.js'
+import { fetchVerificationItems, fetchVerificationResults, saveVerificationResult } from './lib/verification.js'
 import { ICheck, IX, ISave, IAlert, IChevronLeft, ITrash, IPlus } from './Icons.jsx'
 import { GlassCard, Button } from './Primitives.jsx'
 
 
 const STATUS_LABELS = {
-  pending: { label: 'Menunggu', pill: 'pill-amber' },
-  approved: { label: 'Lolos Admin', pill: 'pill-ok' },
-  needs_review: { label: 'Perlu Verifikasi', pill: 'pill-tosca' },
-  rejected: { label: 'Ditolak', pill: 'pill-danger' },
+  pending: { label: 'MENUNGGU', pill: 'pill-amber' },
+  approved: { label: 'LOLOS ADMIN', pill: 'pill-ok' },
+  needs_review: { label: 'PERLU VERIFIKASI', pill: 'pill-tosca' },
+  rejected: { label: 'DITOLAK', pill: 'pill-danger' },
 }
 
-const ALL_TABS = ['Semua', 'Menunggu', 'Lolos Admin', 'Perlu Verifikasi', 'Ditolak']
+const ALL_TABS = ['SEMUA', 'MENUNGGU', 'LOLOS ADMIN', 'PERLU VERIFIKASI', 'DITOLAK']
 const TAB_FILTER = {
-  'Semua': null,
-  'Menunggu': 'pending',
-  'Lolos Admin': 'approved',
-  'Perlu Verifikasi': 'needs_review',
-  'Ditolak': 'rejected',
+  'SEMUA': null,
+  'MENUNGGU': 'pending',
+  'LOLOS ADMIN': 'approved',
+  'PERLU VERIFIKASI': 'needs_review',
+  'DITOLAK': 'rejected',
 }
 
 // Map doc_type → field name di submission object (legacy admin naming)
@@ -63,6 +64,14 @@ function mapApplicantRowToSubmission(row, achievements = [], organizations = [],
       name: o.name || '', role: o.role || '', period: o.period || '',
       description: o.description || '',
     })),
+    // Map kolom skoring & Had Kifayah eksplisit
+    hkPriority:         row.hk_priority,
+    hkGap:              row.hk_gap,
+    totalHadKifayah:    row.total_had_kifayah,
+    totalIncome:        row.total_income,
+    grandScore:         row.grand_score,
+    skorPrestasi:       row.skor_prestasi,
+    skorOrganisasi:     row.skor_organisasi,
   }
   // Inject documents
   for (const doc of documents || []) {
@@ -154,6 +163,15 @@ function StatusPill({ status }) {
   return <span className={`pill ${info.pill}`}>{info.label}</span>
 }
 
+function PriorityPill({ priority }) {
+  if (!priority) return null
+  let cls = 'pill-ink'
+  if (priority === 'PRIORITAS 1') cls = 'pill-danger'
+  if (priority === 'PRIORITAS 2') cls = 'pill-amber'
+  if (priority === 'PRIORITAS 3') cls = 'pill-tosca'
+  return <span className={`pill ${cls}`} style={{ fontSize: 10 }}>{priority}</span>
+}
+
 function ActionConfirmModal({ action, onConfirm, onCancel, mobile }) {
   return (
     <div className="modal-backdrop" style={{ zIndex: 10001 }} onClick={onCancel}>
@@ -206,37 +224,79 @@ function SectionCard({ title, children, padding = 20 }) {
 
 function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
   const [lightboxObj, setLightboxObj] = React.useState(null);
+  const [verifItems, setVerifItems] = React.useState([]);
   const [verif, setVerif] = React.useState({ checks: {}, notes: {} })
+  const saveTimer = React.useRef({})
 
-  // Load saved verification state for this submission
+  // Fetch items & results on mount
   React.useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(`etos_verification_${submission._idx}`) || 'null')
-      setVerif(saved?.checks ? { checks: saved.checks, notes: saved.notes || {} } : { checks: {}, notes: {} })
-    } catch { setVerif({ checks: {}, notes: {} }) }
+    let cancelled = false
+    const load = async () => {
+      const items = await fetchVerificationItems()
+      if (cancelled) return
+      setVerifItems(items)
+      
+      const results = await fetchVerificationResults(submission._idx)
+      if (cancelled) return
+      
+      const checks = {}
+      const notes = {}
+      results.forEach(r => {
+        checks[r.item_id] = r.status === 'valid'
+        notes[r.item_id] = r.notes || ''
+      })
+      setVerif(prev => ({ ...prev, checks: { ...prev.checks, ...checks }, notes: { ...prev.notes, ...notes } }))
+    }
+    load()
+    return () => { cancelled = true }
   }, [submission._idx])
 
-  const saveVerif = React.useCallback((next) => {
-    try {
-      localStorage.setItem(`etos_verification_${submission._idx}`, JSON.stringify({ ...next, savedAt: new Date().toISOString() }))
-    } catch {}
+  const triggerSave = React.useCallback((itemId, status, notes) => {
+    if (saveTimer.current[itemId]) clearTimeout(saveTimer.current[itemId])
+    saveTimer.current[itemId] = setTimeout(async () => {
+      try {
+        await saveVerificationResult({
+          applicantId: submission._idx,
+          itemId,
+          status: status ? 'valid' : 'invalid',
+          notes: notes || null
+        })
+      } catch (e) {
+        console.error('Failed to save verif result:', e)
+      }
+    }, 800)
   }, [submission._idx])
 
   const toggleCheck = React.useCallback((id) => {
     setVerif(prev => {
-      const next = { ...prev, checks: { ...prev.checks, [id]: !prev.checks[id] } }
-      saveVerif(next)
+      const isChecked = !prev.checks[id]
+      const next = { ...prev, checks: { ...prev.checks, [id]: isChecked } }
+      triggerSave(id, isChecked, next.notes[id])
       return next
     })
-  }, [saveVerif])
+  }, [triggerSave])
 
   const setNote = React.useCallback((id, value) => {
     setVerif(prev => {
       const next = { ...prev, notes: { ...prev.notes, [id]: value } }
-      saveVerif(next)
+      triggerSave(id, prev.checks[id], value)
       return next
     })
-  }, [saveVerif])
+  }, [triggerSave])
+
+  const renderVerifyBlock = (step) => {
+    const items = verifItems.filter(it => it.step === step)
+    if (items.length === 0) return null
+    return (
+      <VerifyBlock
+        checks={verif.checks}
+        notes={verif.notes}
+        onToggle={toggleCheck}
+        onNote={setNote}
+        items={items}
+      />
+    )
+  }
 
   const kv = React.useCallback((label, value) => (
     <div className="kv">
@@ -338,22 +398,13 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
         </div>
         <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {submission.ijazahFile?.url
-            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.ijazahFile.url, title: 'Scan Ijazah SMA / MA' })}>Lihat Ijazah SMA</Button>
-            : <span className="muted" style={{ fontSize: 13 }}>Ijazah SMA: tidak diunggah</span>}
+            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.ijazahFile.url, title: 'SCAN IJAZAH SMA / MA' })}>LIHAT IJAZAH SMA</Button>
+            : <span className="muted" style={{ fontSize: 13 }}>IJAZAH SMA: TIDAK DIUNGGAH</span>}
           {submission.admissionProofFile?.url
-            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.admissionProofFile.url, title: 'Bukti SNBP / SNBT' })}>Lihat Bukti SNBP/SNBT</Button>
-            : <span className="muted" style={{ fontSize: 13 }}>Bukti SNBP/SNBT: tidak diunggah</span>}
+            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.admissionProofFile.url, title: 'BUKTI SNBP / SNBT' })}>LIHAT BUKTI SNBP/SNBT</Button>
+            : <span className="muted" style={{ fontSize: 13 }}>BUKTI SNBP/SNBT: TIDAK DIUNGGAH</span>}
         </div>
-        <VerifyBlock
-          checks={verif.checks}
-          notes={verif.notes}
-          onToggle={toggleCheck}
-          onNote={setNote}
-          items={[
-            { id: 'ijazah_valid', label: 'Bukti Ijazah valid' },
-            { id: 'snbt_valid',   label: 'Bukti SNBP/SNBT valid' },
-          ]}
-        />
+        {renderVerifyBlock('dokumen')}
       </SectionCard>
 
       {/* ── Data Pribadi ── */}
@@ -377,16 +428,7 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
             <div className="kv-value">{submission.address || <span className="muted">—</span>}</div>
           </div>
         </div>
-        <VerifyBlock
-          checks={verif.checks}
-          notes={verif.notes}
-          onToggle={toggleCheck}
-          onNote={setNote}
-          items={[
-            { id: 'foto_valid', label: 'Foto Profil valid' },
-            { id: 'ig_valid',   label: 'Instagram valid' },
-          ]}
-        />
+        {renderVerifyBlock('data_pribadi')}
       </SectionCard>
 
       {/* ── Keluarga ── */}
@@ -395,12 +437,12 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
           {kv('Status pernikahan orang tua', submission.familyStatus)}
           {kv('Nama ayah',      submission.fatherName)}
           {kv('Kondisi ayah',   submission.fatherCondition)}
-          {kv('Pekerjaan ayah', submission.fatherCondition === 'Wafat' ? 'Tidak Bekerja (Wafat)' : (submission.fatherJob === 'Lainnya' ? `Lainnya — ${submission.fatherJobOther}` : submission.fatherJob))}
+          {kv('Pekerjaan ayah', submission.fatherCondition === 'Wafat' ? 'TIDAK BEKERJA (WAFAT)' : (submission.fatherJob === 'Lainnya' ? `LAINNYA — ${submission.fatherJobOther}` : (submission.fatherJob || '').toUpperCase()))}
           {kv('Nama ibu',       submission.motherName)}
           {kv('Kondisi ibu',    submission.motherCondition)}
-          {kv('Pekerjaan ibu',  submission.motherCondition === 'Wafat' ? 'Tidak Bekerja (Wafat)' : (submission.motherJob === 'Lainnya' ? `Lainnya — ${submission.motherJobOther}` : submission.motherJob))}
+          {kv('Pekerjaan ibu',  submission.motherCondition === 'Wafat' ? 'TIDAK BEKERJA (WAFAT)' : (submission.motherJob === 'Lainnya' ? `LAINNYA — ${submission.motherJobOther}` : (submission.motherJob || '').toUpperCase()))}
           {submission.guardianName && kv('Nama wali',     submission.guardianName)}
-          {submission.guardianName && kv('Pekerjaan wali', submission.guardianJob === 'Lainnya' ? `Lainnya — ${submission.guardianJobOther}` : submission.guardianJob)}
+          {submission.guardianName && kv('Pekerjaan wali', submission.guardianJob === 'Lainnya' ? `LAINNYA — ${submission.guardianJobOther}` : (submission.guardianJob || '').toUpperCase())}
           <div className="kv" style={{ gridColumn: '1 / -1' }}>
             <div className="kv-label">Kartu Keluarga</div>
             <div className="kv-value">
@@ -410,15 +452,7 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
             </div>
           </div>
         </div>
-        <VerifyBlock
-          checks={verif.checks}
-          notes={verif.notes}
-          onToggle={toggleCheck}
-          onNote={setNote}
-          items={[
-            { id: 'kk_valid', label: 'Kartu Keluarga valid' },
-          ]}
-        />
+        {renderVerifyBlock('data_keluarga')}
       </SectionCard>
 
       {/* ── Kondisi Ekonomi ── */}
@@ -433,9 +467,6 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
           {kv('Motor / roda 2',   String(submission.vehicleBike  ?? 0))}
           {kv('Mobil / roda 3–4', String(submission.vehicleCar   ?? 0))}
           {kv('Kendaraan lainnya', String(submission.vehicleOther ?? 0))}
-          {kv('BPJS aktif',     String(submission.bpjsActiveCount   ?? 0))}
-          {kv('BPJS non-aktif', String(submission.bpjsInactiveCount ?? 0))}
-          {kv('KIP / Beasiswa', submission.kipStatus)}
         </div>
 
         {/* Komposisi tanggungan */}
@@ -458,32 +489,58 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
         {/* Foto rumah & dapur */}
         <div style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {submission.housePhotoFile?.url
-            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.housePhotoFile.url, title: 'Foto Tampak Depan Rumah' })}>Lihat Foto Rumah</Button>
-            : <span className="muted" style={{ fontSize: 13 }}>Foto rumah: tidak diunggah</span>}
+            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.housePhotoFile.url, title: 'FOTO TAMPAK DEPAN RUMAH' })}>LIHAT FOTO RUMAH</Button>
+            : <span className="muted" style={{ fontSize: 13 }}>FOTO RUMAH: TIDAK DIUNGGAH</span>}
           {submission.kitchenPhotoFile?.url
-            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.kitchenPhotoFile.url, title: 'Foto Ruangan Dapur' })}>Lihat Foto Dapur</Button>
-            : <span className="muted" style={{ fontSize: 13 }}>Foto dapur: tidak diunggah</span>}
+            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.kitchenPhotoFile.url, title: 'FOTO RUANGAN DAPUR' })}>LIHAT FOTO DAPUR</Button>
+            : <span className="muted" style={{ fontSize: 13 }}>FOTO DAPUR: TIDAK DIUNGGAH</span>}
         </div>
-        <VerifyBlock
-          checks={verif.checks}
-          notes={verif.notes}
-          onToggle={toggleCheck}
-          onNote={setNote}
-          items={[
-            { id: 'foto_rumah_valid',  label: 'Foto Rumah valid' },
-            { id: 'foto_dapur_valid',  label: 'Foto Dapur valid' },
-          ]}
-        />
+        {renderVerifyBlock('kondisi_ekonomi')}
+      </SectionCard>
+
+      {/* ── Analisis Had Kifayah ── */}
+      <SectionCard title="Analisis Ekonomi & Had Kifayah">
+        <div style={{ padding: '16px', background: 'linear-gradient(135deg, var(--tosca-50) 0%, #fff 100%)', borderRadius: 12, border: '1px solid var(--tosca-200)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 24 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tosca-700)', textTransform: 'uppercase', marginBottom: 12 }}>Status Kelayakan</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <PriorityPill priority={submission.hkPriority} />
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-700)' }}>
+                  GAP: {formatRp(submission.hkGap)}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: 'var(--ink-500)' }}>Total Kebutuhan (HK)</span>
+                <span style={{ fontWeight: 600 }}>{formatRp(submission.totalHadKifayah)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: 'var(--ink-500)' }}>Total Pendapatan</span>
+                <span style={{ fontWeight: 600 }}>{formatRp(submission.totalIncome)}</span>
+              </div>
+              <div style={{ height: 1, background: 'var(--tosca-200)', margin: '4px 0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--tosca-700)', fontWeight: 700 }}>
+                <span>Selisih (Defisit)</span>
+                <span>{formatRp(submission.hkGap)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </SectionCard>
 
       {/* Prestasi */}
       {submission.achievements && submission.achievements.length > 0 && (
         <SectionCard title={`Prestasi (${submission.achievements.length})`}>
+          <div style={{ marginBottom: 12, fontSize: 12, fontWeight: 700, color: 'var(--tosca-700)' }}>
+            SKOR PRESTASI: {submission.skorPrestasi || 0} / 100
+          </div>
           {submission.achievements.map((a, i) => (
             <div key={i} style={{ padding: '8px 12px', background: 'var(--ink-50)', borderRadius: 10, marginBottom: 8 }}>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{a.title}</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{(a.title || '').toUpperCase()}</div>
               <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>
-                {[a.rank, a.level, a.year, a.issuer].filter(Boolean).join(' · ')}
+                {[a.rank, a.level, a.year, a.issuer].filter(Boolean).map(s => String(s).toUpperCase()).join(' · ')}
               </div>
             </div>
           ))}
@@ -493,14 +550,17 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
       {/* Organisasi */}
       {submission.organizations && submission.organizations.length > 0 && (
         <SectionCard title={`Organisasi (${submission.organizations.length})`}>
+          <div style={{ marginBottom: 12, fontSize: 12, fontWeight: 700, color: 'var(--tosca-700)' }}>
+            SKOR ORGANISASI: {submission.skorOrganisasi || 0} / 100
+          </div>
           {submission.organizations.map((o, i) => (
             <div key={i} style={{ padding: '8px 12px', background: 'var(--ink-50)', borderRadius: 10, marginBottom: 8 }}>
               <div style={{ fontWeight: 600, fontSize: 13 }}>
-                {o.name} <span style={{ color: 'var(--ink-500)', fontWeight: 500 }}>· {o.role}</span>
+                {(o.name || '').toUpperCase()} <span style={{ color: 'var(--ink-500)', fontWeight: 500 }}>· {(o.role || '').toUpperCase()}</span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>{o.period}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>{(o.period || '').toUpperCase()}</div>
               {o.description && (
-                <div style={{ fontSize: 12, color: 'var(--ink-600)', marginTop: 4 }}>{o.description}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-600)', marginTop: 4 }}>{(o.description || '').toUpperCase()}</div>
               )}
             </div>
           ))}
@@ -519,16 +579,7 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
             </div>
           ))}
         </div>
-        <VerifyBlock
-          checks={verif.checks}
-          notes={verif.notes}
-          onToggle={toggleCheck}
-          onNote={setNote}
-          items={[
-            { id: 'esai_orisinal', label: 'Esai terlihat orisinil' },
-            { id: 'esai_relevan',  label: 'Esai terlihat relevan' },
-          ]}
-        />
+        {renderVerifyBlock('esai')}
       </SectionCard>
 
       {/* Action Buttons */}
@@ -754,9 +805,9 @@ function KonfigurasiPanel({ mobile }) {
       }))
 
     const STATUS_OPTS = [
-      { value: 'upcoming', label: 'Akan Datang' },
-      { value: 'ongoing',  label: 'Sedang Berjalan' },
-      { value: 'done',     label: 'Selesai' },
+      { value: 'upcoming', label: 'AKAN DATANG' },
+      { value: 'ongoing',  label: 'SEDANG BERJALAN' },
+      { value: 'done',     label: 'SELESAI' },
     ]
 
     const inputStyle = { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--ink-200)', fontSize: 13, width: '100%', background: 'var(--surface)', color: 'var(--ink-900)' }
@@ -977,7 +1028,15 @@ function PendaftarPanel({ mobile }) {
             <GlassCard key={s._idx} style={{ padding: mobile ? '12px 14px' : '14px 20px' }}>
               <div style={{ display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'stretch' : 'center', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>{s.fullName || '—'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{s.fullName || '—'}</div>
+                    <PriorityPill priority={s.hkPriority} />
+                    {(s.grandScore > 0 || s.skorPrestasi > 0 || s.skorOrganisasi > 0) && (
+                      <span className="pill pill-ink" style={{ fontSize: 10, background: 'var(--ink-800)', color: '#fff' }}>
+                        SKOR: {s.grandScore || 0}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>
                     <span className="mono">{s.registrationNumber || 'ETOS-26-DEMO'}</span>
                     {' · '}{s.province || '—'}

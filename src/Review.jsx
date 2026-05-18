@@ -51,7 +51,7 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      if (onSubmit) await onSubmit()
+      if (onSubmit) await onSubmit(consent)
     } catch (e) {
       setSubmitError(e?.message || 'Terjadi kesalahan. Coba lagi.')
     } finally {
@@ -61,28 +61,16 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
 
   return (
     <div className="form-shell">
-      {form.submittedAt ? (
-        <GlassCard style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: 64, marginBottom: 20 }}>📑✅</div>
-          <h1 style={{ marginBottom: 12 }}>Pendaftaran Selesai</h1>
-          <p style={{ color: 'var(--ink-600)', maxWidth: 480, margin: '0 auto 32px', fontSize: 16 }}>
-            Terima kasih! Pendaftaran Anda telah kami terima pada <strong>{form.submittedAt}</strong>.
-            Data Anda saat ini sedang dalam tahap verifikasi oleh panitia seleksi.
-          </p>
-          <Button variant="outline-tosca" onClick={onBack}>Kembali ke Dashboard</Button>
-        </GlassCard>
-      ) : (
-        <>
-          <div>
-            <div className="eyebrow">Tahap Final</div>
-            <h1 style={{ marginTop: 6 }}>Tinjau seluruh data Anda</h1>
-            <p style={{ marginTop: 8, maxWidth: 640 }}>
-              Periksa kembali setiap bagian dengan teliti. Setelah pendaftaran dikirim, data tidak dapat diubah.
-              Gunakan tombol <strong>Edit</strong> di pojok tiap bagian untuk memperbaiki.
-            </p>
-          </div>
+      <div>
+        <div className="eyebrow">Tahap Final</div>
+        <h1 style={{ marginTop: 6 }}>Tinjau seluruh data Anda</h1>
+        <p style={{ marginTop: 8, maxWidth: 640 }}>
+          Periksa kembali setiap bagian dengan teliti. {form.submittedAt ? 'Anda sedang dalam mode Ubah Data.' : 'Setelah pendaftaran dikirim, data masih dapat diubah selama masa pendaftaran.'}
+          Gunakan tombol <strong>Edit</strong> di pojok tiap bagian untuk memperbaiki.
+        </p>
+      </div>
 
-          {/* ── Step 1: Data Pribadi ── */}
+      {/* ── Step 1: Data Pribadi ── */}
           {section(1, 'Data Pribadi', [
             ['Pas foto profil', form.photoFile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -107,25 +95,25 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
 
           {/* ── Step 2: Keluarga ── */}
           {section(2, 'Keluarga', [
-            ['Status pernikahan orangtua', form.familyStatus],
-            ['Nama ayah',          form.fatherName],
-            ['Kondisi ayah',       form.fatherCondition],
-            ['Pekerjaan ayah',     form.fatherCondition === 'Wafat' ? 'Tidak Bekerja (Wafat)' : form.fatherJob],
-            ['Nama ibu',           form.motherName],
-            ['Kondisi ibu',        form.motherCondition],
-            ['Pekerjaan ibu',      form.motherCondition === 'Wafat' ? 'Tidak Bekerja (Wafat)' : form.motherJob],
+            ['Status pernikahan orangtua', (form.familyStatus || '').toUpperCase()],
+            ['Nama ayah',          (form.fatherName || '').toUpperCase()],
+            ['Kondisi ayah',       (form.fatherCondition || '').toUpperCase()],
+            ['Pekerjaan ayah',     form.fatherCondition === 'Wafat' ? 'TIDAK BEKERJA (WAFAT)' : (form.fatherJob || '').toUpperCase()],
+            ['Nama ibu',           (form.motherName || '').toUpperCase()],
+            ['Kondisi ibu',        (form.motherCondition || '').toUpperCase()],
+            ['Pekerjaan ibu',      form.motherCondition === 'Wafat' ? 'TIDAK BEKERJA (WAFAT)' : (form.motherJob || '').toUpperCase()],
             ...(form.guardianName ? [
-              ['Nama wali',        form.guardianName],
-              ['Pekerjaan wali',   form.guardianJob],
+              ['Nama wali',        (form.guardianName || '').toUpperCase()],
+              ['Pekerjaan wali',   (form.guardianJob || '').toUpperCase()],
             ] : []),
             ['Kartu Keluarga',     <FileThumb file={form.kkFile} />],
           ], 2)}
 
           {/* ── Step 3: Kondisi Ekonomi ── */}
           {section(3, 'Kondisi Ekonomi', [
-            ['Penanggung kehidupan', form.mainProvider],
-            ...(['Ayah & Ibu', 'Ayah Saja'].includes(form.mainProvider) ? [['Pendapatan ayah/bulan', formatRp(form.fatherIncomeAmount)]] : []),
-            ...(['Ayah & Ibu', 'Ibu Saja'].includes(form.mainProvider)  ? [['Pendapatan ibu/bulan',  formatRp(form.motherIncomeAmount)]]  : []),
+            ['Penanggung kehidupan', (form.mainProvider || '').toUpperCase()],
+            ...(['Ayah & Ibu', 'Ayah Saja', 'Wali'].includes(form.mainProvider) && form.fatherCondition !== 'Wafat' ? [['Pendapatan ayah/bulan', formatRp(form.fatherIncomeAmount)]] : []),
+            ...(['Ayah & Ibu', 'Ibu Saja', 'Wali'].includes(form.mainProvider)  && form.motherCondition !== 'Wafat' ? [['Pendapatan ibu/bulan',  formatRp(form.motherIncomeAmount)]]  : []),
             ...(form.mainProvider === 'Wali'                             ? [['Pendapatan wali/bulan', formatRp(form.guardianIncomeAmount)]] : []),
             ['Saya sendiri (pemohon)', '1'],
             ['Kepala keluarga (ayah)', form.fatherCondition === 'Hidup' ? '1' : '0'],
@@ -135,14 +123,11 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
             ['Saudara SMA/SMP',            String(form.siblingsHighSchool      ?? 0)],
             ['Saudara SD/Bayi',            String(form.siblingsElementary      ?? 0)],
             ['Kakek / Nenek',              String(form.grandparentsCount        ?? 0)],
-            ['Status rumah',       form.houseStatus],
-            ['Daya listrik',       form.electricPower],
+            ['Status rumah',       (form.houseStatus || '').toUpperCase()],
+            ['Daya listrik',       (form.electricPower || '').toUpperCase()],
             ['Motor / roda 2',     String(form.vehicleBike  ?? 0)],
             ['Mobil / roda 3–4',   String(form.vehicleCar   ?? 0)],
             ['Kendaraan lainnya',  String(form.vehicleOther ?? 0)],
-            ['BPJS aktif',         String(form.bpjsActiveCount   ?? 0)],
-            ['BPJS non-aktif',     String(form.bpjsInactiveCount ?? 0)],
-            ['Penerima KIP/beasiswa', form.kipStatus],
             ['Foto tampak depan rumah', <FileThumb file={form.housePhotoFile} />],
             ['Foto ruangan dapur', <FileThumb file={form.kitchenPhotoFile} />],
           ], 3)}
@@ -150,16 +135,16 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
           {/* ── Step 4: Prestasi ── */}
           <GlassCard className="review-group">
             <div className="review-head">
-              <h3><span className="review-num">4</span>Prestasi <span className="pill pill-tosca">{form.achievements.length} item</span></h3>
-              <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(4)}><IEdit size={14} /> Edit</button>
+              <h3><span className="review-num">4</span>Prestasi <span className="pill pill-tosca">{form.achievements.length} ITEM</span></h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(4)}><IEdit size={14} /> EDIT</button>
             </div>
             {form.achievements.length === 0
-              ? <p className="muted" style={{ fontSize: 14 }}>Tidak ada prestasi tercatat.</p>
+              ? <p className="muted" style={{ fontSize: 14 }}>TIDAK ADA PRESTASI TERCATAT.</p>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {form.achievements.map((a, i) => (
                     <div key={i} style={{ padding: '10px 14px', background: 'var(--ink-50)', borderRadius: 12, border: '1px solid var(--ink-200)' }}>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{a.title || <span className="muted">(tanpa judul)</span>}</div>
-                      <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>{[a.level, a.rank, a.year, a.issuer].filter(Boolean).join(' · ')}</div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{(a.title || '').toUpperCase() || <span className="muted">(TANPA JUDUL)</span>}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>{[a.level, a.rank, a.year, a.issuer].filter(Boolean).map(s => String(s).toUpperCase()).join(' · ')}</div>
                     </div>
                   ))}
                 </div>
@@ -169,17 +154,17 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
           {/* ── Step 5: Organisasi ── */}
           <GlassCard className="review-group">
             <div className="review-head">
-              <h3><span className="review-num">5</span>Organisasi <span className="pill pill-tosca">{form.organizations.length} item</span></h3>
-              <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(5)}><IEdit size={14} /> Edit</button>
+              <h3><span className="review-num">5</span>Organisasi <span className="pill pill-tosca">{form.organizations.length} ITEM</span></h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(5)}><IEdit size={14} /> EDIT</button>
             </div>
             {form.organizations.length === 0
-              ? <p className="muted" style={{ fontSize: 14 }}>Tidak ada organisasi tercatat.</p>
+              ? <p className="muted" style={{ fontSize: 14 }}>TIDAK ADA ORGANISASI TERCATAT.</p>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {form.organizations.map((o, i) => (
                     <div key={i} style={{ padding: '10px 14px', background: 'var(--ink-50)', borderRadius: 12, border: '1px solid var(--ink-200)' }}>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{o.name} <span style={{ color: 'var(--ink-500)', fontWeight: 500 }}>· {o.role}</span></div>
-                      <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>{o.period}</div>
-                      {o.description && <div style={{ fontSize: 13, color: 'var(--ink-700)', marginTop: 6 }}>{o.description}</div>}
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{(o.name || '').toUpperCase()} <span style={{ color: 'var(--ink-500)', fontWeight: 500 }}>· {(o.role || '').toUpperCase()}</span></div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>{(o.period || '').toUpperCase()}</div>
+                      {o.description && <div style={{ fontSize: 13, color: 'var(--ink-700)', marginTop: 6 }}>{(o.description || '').toUpperCase()}</div>}
                     </div>
                   ))}
                 </div>
@@ -190,18 +175,18 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
           <GlassCard className="review-group">
             <div className="review-head">
               <h3><span className="review-num">6</span>Esai</h3>
-              <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(6)}><IEdit size={14} /> Edit</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => onEdit && onEdit(6)}><IEdit size={14} /> EDIT</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {[
-                ['Alasan mendaftar',         form.motivation],
-                ['Rencana studi & karir',    form.futurePlan],
-                ['Kontribusi untuk daerah',  form.contribution],
+                ['ALASAN MENDAFTAR',         form.motivation],
+                ['RENCANA STUDI & KARIR',    form.futurePlan],
+                ['KONTRIBUSI UNTUK DAERAH',  form.contribution],
               ].map(([k, v], i) => (
                 <div key={i}>
                   <div className="kv-label" style={{ marginBottom: 6 }}>{k}</div>
                   <div style={{ fontSize: 14, color: 'var(--ink-800)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                    {v || <span className="muted">—</span>}
+                    {(v || '').toUpperCase() || <span className="muted">—</span>}
                   </div>
                 </div>
               ))}
@@ -217,7 +202,7 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
             <div style={{ marginTop: 18, display: 'flex', gap: 14, justifyContent: 'space-between', flexDirection: mobile ? 'column-reverse' : 'row' }}>
               <Button variant="ghost" block={mobile} onClick={onBack}><IChevronLeft size={16} /> Kembali ke dasbor</Button>
               <Button variant="primary" block={mobile} size="lg" disabled={!consent} onClick={() => setShowConfirm(true)}>
-                <ISend size={16} /> Kirim Pendaftaran
+                <ISend size={16} /> {form.submittedAt ? 'Perbarui Pendaftaran' : 'Kirim Pendaftaran'}
               </Button>
             </div>
           </GlassCard>
@@ -229,9 +214,9 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
                   <IAlert size={24} />
                 </div>
-                <h2 style={{ fontSize: 22 }}>Yakin ingin mengirim pendaftaran?</h2>
+                <h2 style={{ fontSize: 22 }}>Yakin ingin {form.submittedAt ? 'memperbarui' : 'mengirim'} pendaftaran?</h2>
                 <p style={{ marginTop: 8 }}>
-                  Setelah dikirim, data Anda akan dikunci dan tidak dapat diubah kembali. Pastikan Anda sudah meninjau seluruh bagian.
+                  {form.submittedAt ? 'Data pendaftaran Anda akan diperbarui.' : 'Setelah dikirim, data Anda masih bisa diubah selama masa pendaftaran. Pastikan Anda sudah meninjau seluruh bagian.'}
                 </p>
                 {submitError && (
                   <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'var(--danger-50, #fef2f2)', border: '1px solid var(--danger-200, #fecaca)', color: 'var(--danger-700, #b91c1c)', fontSize: 13 }}>
@@ -241,14 +226,12 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
                 <div style={{ display: 'flex', flexDirection: mobile ? 'column-reverse' : 'row', gap: 12, marginTop: 24 }}>
                   <Button variant="ghost" block={mobile} onClick={() => setShowConfirm(false)}>Periksa lagi</Button>
                   <Button variant="primary" block={mobile} loading={submitting} onClick={handleFinal}>
-                    <ICheck size={16} /> Ya, kirim sekarang
+                    <ICheck size={16} /> Ya, {form.submittedAt ? 'perbarui' : 'kirim'} sekarang
                   </Button>
                 </div>
               </GlassCard>
             </div>
           )}
-        </>
-      )}
     </div>
   )
 }
