@@ -193,20 +193,33 @@ export function calculateHadKifayah(form, std) {
   
   const totalOrang = kkCount + ak1Count + ak2Count + ak3Count
 
-  // 2. Rumus Biaya Individu (Pangan + Ibadah + Pakaian)
-  const costIndividu = 
-    (BigInt(kkCount)  * (BigInt(std.food_kk)   + BigInt(std.prayer_kk)   + BigInt(std.clothes_kk))) +
-    (BigInt(ak1Count) * (BigInt(std.food_ak1)  + BigInt(std.prayer_ak1)  + BigInt(std.clothes_ak1))) +
-    (BigInt(ak2Count) * (BigInt(std.food_ak2)  + BigInt(std.prayer_ak2)  + BigInt(std.clothes_ak2))) +
-    (BigInt(ak3Count) * (BigInt(std.food_ak3)  + BigInt(std.prayer_ak3)  + BigInt(std.clothes_ak3)))
+  // ── 7 Dimensi Had Kifayah ──
 
-  // 3. Umum (Transport + Kesehatan) — Per orang
-  const costUmum = BigInt(totalOrang) * (BigInt(std.transport) + BigInt(std.health))
+  // Dimensi 1: Ibadah
+  const dimIbadah = Number(
+    (BigInt(kkCount)  * BigInt(std.prayer_kk)) +
+    (BigInt(ak1Count) * BigInt(std.prayer_ak1)) +
+    (BigInt(ak2Count) * BigInt(std.prayer_ak2)) +
+    (BigInt(ak3Count) * BigInt(std.prayer_prayer_ak3 || std.prayer_ak3))
+  )
 
-  // 4. Pendidikan — Hanya AK2 + AK3
-  const costEdu = BigInt(ak2Count + ak3Count) * BigInt(std.education)
+  // Dimensi 2: Pangan
+  const dimPangan = Number(
+    (BigInt(kkCount)  * BigInt(std.food_kk)) +
+    (BigInt(ak1Count) * BigInt(std.food_ak1)) +
+    (BigInt(ak2Count) * BigInt(std.food_ak2)) +
+    (BigInt(ak3Count) * BigInt(std.food_ak3))
+  )
 
-  // 5. Fasilitas Rumah & Listrik (Pengali)
+  // Dimensi 3: Pakaian
+  const dimPakaian = Number(
+    (BigInt(kkCount)  * BigInt(std.clothes_kk)) +
+    (BigInt(ak1Count) * BigInt(std.clothes_ak1)) +
+    (BigInt(ak2Count) * BigInt(std.clothes_ak2)) +
+    (BigInt(ak3Count) * BigInt(std.clothes_ak3))
+  )
+
+  // Dimensi 4: Tempat Tinggal (House + Power)
   const hStat = (form.houseStatus || '').toUpperCase()
   let houseMult = 0
   if (hStat === 'SEWA/KONTRAK') houseMult = 1
@@ -217,17 +230,30 @@ export function calculateHadKifayah(form, std) {
   if (pStat === '900 WATT') powerMult = 2
   if (pStat === '>900 WATT') powerMult = 3
 
-  const costFacility = (BigInt(std.own_house) * BigInt(houseMult)) + (BigInt(std.power_house) * BigInt(powerMult))
+  const dimTempatTinggal = Number((BigInt(std.own_house) * BigInt(houseMult)) + (BigInt(std.power_house) * BigInt(powerMult)))
 
-  // 6. Total Had Kifayah
-  const total_had_kifayah = Number(costIndividu + costUmum + costEdu + costFacility)
+  // Dimensi 5: Kesehatan
+  const dimKesehatan = Number(BigInt(totalOrang) * BigInt(std.health))
 
-  // 7. Total Pendapatan
+  // Dimensi 6: Pendidikan
+  const dimPendidikan = Number(BigInt(ak2Count + ak3Count) * BigInt(std.education))
+
+  // Dimensi 7: Transportasi
+  const vBike  = Number(form.vehicleBike) || 0
+  const vCar   = Number(form.vehicleCar) || 0
+  const vOther = Number(form.vehicleOther) || 0
+  const totalVehicles = vBike + vCar + vOther
+  const dimTransportasi = Number(BigInt(totalVehicles) * BigInt(std.transport))
+
+  // Total Had Kifayah
+  const total_had_kifayah = dimIbadah + dimPangan + dimPakaian + dimTempatTinggal + dimKesehatan + dimPendidikan + dimTransportasi
+
+  // Total Pendapatan
   const total_income = (Number(form.fatherIncomeAmount) || 0) + 
                        (Number(form.motherIncomeAmount) || 0) + 
                        (Number(form.guardianIncomeAmount) || 0)
 
-  // 8. Gap & Priority
+  // Gap & Priority
   const hk_gap = total_had_kifayah - total_income
   
   let hk_priority = 'MAMPU'
@@ -239,7 +265,19 @@ export function calculateHadKifayah(form, std) {
     hk_priority = 'PRIORITAS 3'
   }
 
-  return { total_income, total_had_kifayah, hk_gap, hk_priority }
+  return { 
+    total_income, 
+    total_had_kifayah, 
+    hk_gap, 
+    hk_priority,
+    dim_ibadah: dimIbadah,
+    dim_pangan: dimPangan,
+    dim_pakaian: dimPakaian,
+    dim_tempat_tinggal: dimTempatTinggal,
+    dim_kesehatan: dimKesehatan,
+    dim_pendidikan: dimPendidikan,
+    dim_transportasi: dimTransportasi
+  }
 }
 
 

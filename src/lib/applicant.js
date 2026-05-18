@@ -109,6 +109,13 @@ const FIELD_MAP = {
   totalHadKifayah:          'total_had_kifayah',
   hkGap:                    'hk_gap',
   hkPriority:               'hk_priority',
+  dimIbadah:                'dim_ibadah',
+  dimPangan:                'dim_pangan',
+  dimPakaian:               'dim_pakaian',
+  dimTempatTinggal:         'dim_tempat_tinggal',
+  dimKesehatan:             'dim_kesehatan',
+  dimPendidikan:            'dim_pendidikan',
+  dimTransportasi:          'dim_transportasi',
 }
 
 const REVERSE_FIELD_MAP = Object.fromEntries(
@@ -278,6 +285,15 @@ export async function upsertApplicant(form) {
       payload.total_had_kifayah = hk.total_had_kifayah
       payload.hk_gap            = hk.hk_gap
       payload.hk_priority       = hk.hk_priority
+      
+      // Injeksi 7 Dimensi
+      payload.dim_ibadah         = hk.dim_ibadah
+      payload.dim_pangan         = hk.dim_pangan
+      payload.dim_pakaian        = hk.dim_pakaian
+      payload.dim_tempat_tinggal = hk.dim_tempat_tinggal
+      payload.dim_kesehatan      = hk.dim_kesehatan
+      payload.dim_pendidikan     = hk.dim_pendidikan
+      payload.dim_transportasi   = hk.dim_transportasi
     }
   }
 
