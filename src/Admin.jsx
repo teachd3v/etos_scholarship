@@ -1005,7 +1005,7 @@ function PendaftarPanel({ mobile }) {
       </GlassCard>
 
       <div className="dash-grid">
-        {Object.entries({ 'Total': submissions.length, 'Menunggu': counts['Menunggu'], 'Lolos': counts['Lolos Admin'], 'Ditolak': counts['Ditolak'] }).map(([k, v]) => (
+        {Object.entries({ 'Total': submissions.length, 'Menunggu': counts['MENUNGGU'] || 0, 'Lolos': counts['LOLOS ADMIN'] || 0, 'Ditolak': counts['DITOLAK'] || 0 }).map(([k, v]) => (
           <div key={k} className="dash-info">
             <div className="dash-info-label">{k}</div>
             <div className="dash-info-value">{v}</div>
