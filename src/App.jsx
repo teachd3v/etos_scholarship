@@ -241,9 +241,17 @@ export default function App() {
     const bootstrap = async () => {
       try {
         const s = await getSession()
-        if (!cancelled) {
-          setSession(s)
-          setSessionLoading(false)
+        if (cancelled) return
+        setSession(s)
+        setSessionLoading(false)
+
+        // Auto-redirect jika admin login di halaman utama
+        if (s) {
+          const profile = await getProfile()
+          if (cancelled) return
+          if (profile?.role === 'admin' || s.user?.email === 'teach.d3v@gmail.com') {
+            window.location.href = '/admin'
+          }
         }
       } catch {
         if (!cancelled) {
@@ -254,9 +262,17 @@ export default function App() {
     }
     bootstrap()
 
-    const unsubscribe = onAuthStateChange(({ event, session: newSession }) => {
+    const unsubscribe = onAuthStateChange(async ({ event, session: newSession }) => {
       setSession(newSession)
-      if (event === 'SIGNED_OUT') setScreen('auth')
+      if (event === 'SIGNED_OUT') {
+        setScreen('auth')
+      } else if (event === 'SIGNED_IN' && newSession) {
+        // Handle redirect saat baru saja login (misal via Google)
+        const profile = await getProfile()
+        if (profile?.role === 'admin' || newSession.user?.email === 'teach.d3v@gmail.com') {
+          window.location.href = '/admin'
+        }
+      }
     })
 
     return () => { cancelled = true; unsubscribe() }
