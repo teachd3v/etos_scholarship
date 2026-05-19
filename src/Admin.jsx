@@ -18,9 +18,10 @@ const STATUS_LABELS = {
   rejected: { label: 'DITOLAK', pill: 'pill-danger' },
 }
 
-const ALL_TABS = ['SEMUA', 'MENUNGGU', 'LOLOS ADMIN', 'PERLU VERIFIKASI', 'DITOLAK']
+const ALL_TABS = ['SEMUA', 'DRAFT', 'MENUNGGU', 'LOLOS ADMIN', 'PERLU VERIFIKASI', 'DITOLAK']
 const TAB_FILTER = {
   'SEMUA': null,
+  'DRAFT': 'draft',
   'MENUNGGU': 'pending',
   'LOLOS ADMIN': 'approved',
   'PERLU VERIFIKASI': 'needs_review',
@@ -107,7 +108,6 @@ function useSubmissions() {
       const { data: rows, error } = await supabase
         .from('applicants')
         .select('*')
-        .eq('is_submitted', true)
         .order('submitted_at', { ascending: false })
       if (error) throw error
       if (!rows || rows.length === 0) { setSubmissions([]); return }
@@ -951,23 +951,30 @@ function KonfigurasiPanel({ mobile }) {
 // ─── Pendaftar Panel (extracted from old AdminPanel) ─────────────────
 function PendaftarPanel({ mobile }) {
   const { submissions, updateStatus } = useSubmissions()
-  const [activeTab, setActiveTab] = React.useState('Semua')
+  const [activeTab, setActiveTab] = React.useState('SEMUA')
   const [detailId, setDetailId] = React.useState(null)
   const [confirmAction, setConfirmAction] = React.useState(null)
 
-  const filterStatus = TAB_FILTER[activeTab]
-  const filtered = filterStatus
-    ? submissions.filter((s) => (s.status || 'pending') === filterStatus)
-    : submissions
+  const isMatch = (s, targetKey) => {
+    if (!targetKey) return true
+    const sStatus = (s.status || 'pending').toLowerCase()
+    const tKey = targetKey.toLowerCase()
+
+    // Khusus untuk DRAFT: cek kolom is_submitted
+    if (tKey === 'draft') return s.is_submitted === false
+
+    // Untuk tab lain: pendaftar HARUS sudah submitted
+    if (s.is_submitted === false) return false
+
+    // Match by key (pending) OR by label (menunggu)
+    return sStatus === tKey || (STATUS_LABELS[tKey]?.label || '').toLowerCase() === sStatus
+  }
+
+  const filtered = submissions.filter(s => isMatch(s, TAB_FILTER[activeTab]))
 
   const counts = ALL_TABS.reduce((acc, tab) => {
     const f = TAB_FILTER[tab]
-    acc[tab] = f 
-      ? submissions.filter((s) => {
-          const status = (s.status || 'pending').toLowerCase()
-          return status === f.toLowerCase()
-        }).length 
-      : submissions.length
+    acc[tab] = submissions.filter(s => isMatch(s, f)).length
     return acc
   }, {})
 
