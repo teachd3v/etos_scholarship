@@ -23,7 +23,6 @@ export const BLANK_FORM = {
   adultSiblingsWorking: 0, adultSiblingsNotWorking: 0,
   siblingsHighSchool: 0, siblingsElementary: 0, grandparentsCount: 0,
   houseStatus: '', electricPower: '',
-  vehicleBike: 0, vehicleCar: 0, vehicleOther: 0,
   housePhotoFile: null, kitchenPhotoFile: null,
   noAchievement: false,
   noOrganization: false,
@@ -239,11 +238,7 @@ export function calculateHadKifayah(form, std) {
   const dimPendidikan = Number(BigInt(ak2Count + ak3Count) * BigInt(std.education))
 
   // Dimensi 7: Transportasi
-  const vBike  = Number(form.vehicleBike) || 0
-  const vCar   = Number(form.vehicleCar) || 0
-  const vOther = Number(form.vehicleOther) || 0
-  const totalVehicles = vBike + vCar + vOther
-  const dimTransportasi = Number(BigInt(totalVehicles) * BigInt(std.transport))
+  const dimTransportasi = Number(BigInt(totalOrang) * BigInt(std.transport))
 
   // Total Had Kifayah
   const total_had_kifayah = dimIbadah + dimPangan + dimPakaian + dimTempatTinggal + dimKesehatan + dimPendidikan + dimTransportasi
@@ -335,7 +330,6 @@ export const SEED_FORM = {
   siblingsHighSchool: 1, siblingsElementary: 0, grandparentsCount: 2,
   houseStatus: 'Menumpang Keluarga Lain',
   electricPower: '900 watt',
-  vehicleBike: 1, vehicleCar: 0, vehicleOther: 0,
   bpjsActiveCount: 4, bpjsInactiveCount: 0,
   kipStatus: 'Ya',
   housePhotoFile: null,

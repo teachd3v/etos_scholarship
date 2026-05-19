@@ -125,9 +125,6 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
             ['Kakek / Nenek',              String(form.grandparentsCount        ?? 0)],
             ['Status rumah',       (form.houseStatus || '').toUpperCase()],
             ['Daya listrik',       (form.electricPower || '').toUpperCase()],
-            ['Motor / roda 2',     String(form.vehicleBike  ?? 0)],
-            ['Mobil / roda 3–4',   String(form.vehicleCar   ?? 0)],
-            ['Kendaraan lainnya',  String(form.vehicleOther ?? 0)],
             ['Foto tampak depan rumah', <FileThumb file={form.housePhotoFile} />],
             ['Foto ruangan dapur', <FileThumb file={form.kitchenPhotoFile} />],
           ], 3)}

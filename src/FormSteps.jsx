@@ -547,16 +547,6 @@ function Step3Ekonomi({ form, setField, errors, mobile, applicantId }) {
         </div>
       </div>
 
-      {/* ── Kendaraan ── */}
-      <div style={{ marginTop: 24 }}>
-        <SectionHeader title="Kendaraan Keluarga" />
-        <div style={{ borderTop: '1px solid var(--ink-100)' }}>
-          <StepperRow label="Motor / roda 2"                      value={form.vehicleBike}  onChange={(v) => setField('vehicleBike', v)}  max={4} />
-          <StepperRow label="Mobil / roda 3–4"                    value={form.vehicleCar}   onChange={(v) => setField('vehicleCar', v)}   max={4} />
-          <StepperRow label="Kendaraan lainnya (perahu, speedboat, dll)" value={form.vehicleOther} onChange={(v) => setField('vehicleOther', v)} max={4} />
-        </div>
-      </div>
-
       {/* ── Foto rumah ── */}
       <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px dashed var(--ink-200)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: 20 }}>

@@ -472,9 +472,6 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
           {kv('Pendapatan wali/bulan', formatRp(submission.guardianIncomeAmount))}
           {kv('Status rumah',   submission.houseStatus)}
           {kv('Daya listrik',   submission.electricPower)}
-          {kv('Motor / roda 2',   String(submission.vehicleBike  ?? 0))}
-          {kv('Mobil / roda 3–4', String(submission.vehicleCar   ?? 0))}
-          {kv('Kendaraan lainnya', String(submission.vehicleOther ?? 0))}
         </div>
 
         {/* Komposisi tanggungan */}
