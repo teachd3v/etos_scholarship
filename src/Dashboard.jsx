@@ -90,7 +90,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
             </div>
           </div>
           <p style={{ color: 'var(--ink-600)', marginTop: 8, maxWidth: 500, lineHeight: 1.5 }}>
-            {(isAnnouncement || (isSubmitted && form.status && form.status !== 'pending'))
+            {(isAnnouncement || (isSubmitted && form.status && form.status !== 'submitted'))
               ? (form.status === 'approved'
                 ? 'Selamat! Anda lolos seleksi Beasiswa Etos ID 2026.'
                 : (form.status === 'rejected'
@@ -142,7 +142,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                   </GlassCard>
                 )}
 
-                {(isRegistration || isVerification || !form.status || form.status === 'pending') && (!form.status || form.status === 'pending') && (
+                {(isRegistration || isVerification || !form.status || form.status === 'submitted') && (!form.status || form.status === 'submitted') && (
                   <div style={{ padding: '12px 18px', background: isVerification ? 'rgba(13,148,136,0.1)' : 'rgba(16, 185, 129, 0.1)', border: `1px solid ${isVerification ? 'rgba(13,148,136,0.2)' : 'rgba(16, 185, 129, 0.2)'}`, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: isVerification ? 'var(--tosca-500)' : 'var(--ok-500)', animation: isVerification ? 'none' : 'pulse 2s infinite' }}></div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: isVerification ? 'var(--tosca-700)' : 'var(--ok-700)' }}>

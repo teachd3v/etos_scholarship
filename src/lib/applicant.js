@@ -365,7 +365,10 @@ export async function submitApplicant(applicantId) {
   
   const { data, error } = await supabase
     .from('applicants')
-    .update({ is_submitted: true })
+    .update({ 
+      is_submitted: true,
+      status: 'submitted' 
+    })
     .eq('id', applicantId)
     .select()
     .single()

@@ -12,7 +12,7 @@ import { GlassCard, Button } from './Primitives.jsx'
 
 
 const STATUS_LABELS = {
-  pending: { label: 'MENUNGGU', pill: 'pill-amber' },
+  submitted: { label: 'MENUNGGU', pill: 'pill-amber' },
   approved: { label: 'LOLOS ADMIN', pill: 'pill-ok' },
   needs_review: { label: 'PERLU VERIFIKASI', pill: 'pill-tosca' },
   rejected: { label: 'DITOLAK', pill: 'pill-danger' },
@@ -22,7 +22,7 @@ const ALL_TABS = ['SEMUA', 'DRAFT', 'MENUNGGU', 'LOLOS ADMIN', 'PERLU VERIFIKASI
 const TAB_FILTER = {
   'SEMUA': null,
   'DRAFT': 'draft',
-  'MENUNGGU': 'pending',
+  'MENUNGGU': 'submitted',
   'LOLOS ADMIN': 'approved',
   'PERLU VERIFIKASI': 'needs_review',
   'DITOLAK': 'rejected',
@@ -47,7 +47,7 @@ function mapApplicantRowToSubmission(row, achievements = [], organizations = [],
     id:                 row.id,
     user_id:            row.user_id,
     is_submitted:       row.is_submitted === true,
-    status:             row.status || 'pending',
+    status:             row.status || 'submitted',
     registrationNumber: row.registration_number || null,
     submittedAt:        form.submittedAt || null,
     photoFile:          null,
@@ -167,7 +167,7 @@ function useSubmissions() {
 }
 
 function StatusPill({ status }) {
-  const info = STATUS_LABELS[status] || STATUS_LABELS.pending
+  const info = STATUS_LABELS[status] || STATUS_LABELS.submitted
   return <span className={`pill ${info.pill}`}>{info.label}</span>
 }
 
@@ -957,7 +957,7 @@ function PendaftarPanel({ mobile }) {
 
   const isMatch = (s, targetKey) => {
     if (!targetKey) return true
-    const sStatus = (s.status || 'pending').toLowerCase()
+    const sStatus = (s.status || 'submitted').toLowerCase()
     const tKey = targetKey.toLowerCase()
 
     // Khusus untuk DRAFT: cek kolom is_submitted
@@ -1091,7 +1091,7 @@ function PendaftarPanel({ mobile }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTop: mobile ? '1px solid var(--ink-100)' : 'none', paddingTop: mobile ? 10 : 0 }}>
-                  <StatusPill status={s.status || 'pending'} />
+                  <StatusPill status={s.status || 'submitted'} />
                   <Button variant="outline-tosca" size="sm" onClick={() => setDetailId(s._idx)}>
                     Detail
                   </Button>

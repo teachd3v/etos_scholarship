@@ -131,7 +131,7 @@ export function Success({ form, variant = 'full', onBack, mobile }) {
                 fontSize: 16, 
                 color: form.status === 'approved' ? 'var(--tosca-700)' : (form.status === 'rejected' ? 'var(--danger-600)' : 'var(--amber-600)') 
               }}>
-                {form.status === 'approved' ? 'Lolos' : (form.status === 'rejected' ? 'Ditolak' : 'Pending')}
+                {form.status === 'approved' ? 'Lolos' : (form.status === 'rejected' ? 'Ditolak' : 'Menunggu')}
               </div>
             </div>
           </div>
