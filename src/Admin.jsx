@@ -964,9 +964,8 @@ function PendaftarPanel({ mobile }) {
     const f = TAB_FILTER[tab]
     acc[tab] = f 
       ? submissions.filter((s) => {
-          // Normalize status: treat null, undefined, or empty string as 'pending'
-          const status = s.status || 'pending'
-          return status === f
+          const status = (s.status || 'pending').toLowerCase()
+          return status === f.toLowerCase()
         }).length 
       : submissions.length
     return acc
