@@ -222,7 +222,7 @@ export function calculateHadKifayah(form, std) {
   const hStat = (form.houseStatus || '').toUpperCase()
   let houseMult = 0
   if (hStat === 'SEWA/KONTRAK') houseMult = 1
-  if (hStat === 'MENUMPANG KELUARGA LAIN') houseMult = 3
+  if (hStat === 'MENUMPANG KELUARGA LAIN') houseMult = 2
 
   const pStat = (form.electricPower || '').toUpperCase()
   let powerMult = 1
