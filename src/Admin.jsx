@@ -962,7 +962,13 @@ function PendaftarPanel({ mobile }) {
 
   const counts = ALL_TABS.reduce((acc, tab) => {
     const f = TAB_FILTER[tab]
-    acc[tab] = f ? submissions.filter((s) => (s.status || 'pending') === f).length : submissions.length
+    acc[tab] = f 
+      ? submissions.filter((s) => {
+          // Normalize status: treat null, undefined, or empty string as 'pending'
+          const status = s.status || 'pending'
+          return status === f
+        }).length 
+      : submissions.length
     return acc
   }, {})
 
