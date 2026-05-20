@@ -18,7 +18,9 @@ const STATUS_LABELS = {
   rejected: { label: 'DITOLAK', pill: 'pill-danger' },
 }
 
-const ALL_TABS = ['SEMUA', 'DRAFT', 'MENUNGGU', 'LOLOS ADMIN', 'PERLU VERIFIKASI', 'DITOLAK']
+const STATUS_TABS = ['SEMUA', 'DRAFT', 'MENUNGGU', 'LOLOS ADMIN', 'PERLU VERIFIKASI', 'DITOLAK']
+const CAMPUS_TABS = DEFAULT_CONFIG.target_universities || []
+
 const TAB_FILTER = {
   'SEMUA': null,
   'DRAFT': 'draft',
@@ -26,6 +28,15 @@ const TAB_FILTER = {
   'LOLOS ADMIN': 'approved',
   'PERLU VERIFIKASI': 'needs_review',
   'DITOLAK': 'rejected',
+}
+
+const PRIORITY_ORDER = {
+  'PRIORITAS 1': 0,
+  'PRIORITAS 2': 1,
+  'PRIORITAS 3': 2,
+  'MAMPU': 3,
+  '': 4,
+  null: 4
 }
 
 // Map doc_type → field name di submission object (legacy admin naming)
@@ -954,9 +965,23 @@ function PendaftarPanel({ mobile }) {
   const [activeTab, setActiveTab] = React.useState('SEMUA')
   const [detailId, setDetailId] = React.useState(null)
   const [confirmAction, setConfirmAction] = React.useState(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 100
 
-  const isMatch = (s, targetKey) => {
-    if (!targetKey) return true
+  // Reset pagination saat ganti tab
+  React.useEffect(() => { setCurrentPage(1) }, [activeTab])
+
+  const isMatch = (s, tab) => {
+    if (tab === 'SEMUA') return true
+    
+    // Cek apakah tab adalah kampus
+    if (CAMPUS_TABS.includes(tab)) {
+      return (s.province || '').toUpperCase() === tab.toUpperCase() && s.is_submitted === true
+    }
+
+    const targetKey = TAB_FILTER[tab]
+    if (targetKey === undefined) return false
+
     const sStatus = (s.status || 'submitted').toLowerCase()
     const tKey = targetKey.toLowerCase()
 
@@ -970,11 +995,28 @@ function PendaftarPanel({ mobile }) {
     return sStatus === tKey || (STATUS_LABELS[tKey]?.label || '').toLowerCase() === sStatus
   }
 
-  const filtered = submissions.filter(s => isMatch(s, TAB_FILTER[activeTab]))
+  const filtered = submissions.filter(s => isMatch(s, activeTab))
 
-  const counts = ALL_TABS.reduce((acc, tab) => {
-    const f = TAB_FILTER[tab]
-    acc[tab] = submissions.filter(s => isMatch(s, f)).length
+  // Sorting logic
+  const isCampusTab = CAMPUS_TABS.includes(activeTab)
+  const sorted = [...filtered].sort((a, b) => {
+    if (isCampusTab) {
+      // Sort by Priority (1-Mampu)
+      const pA = PRIORITY_ORDER[a.hkPriority] ?? 4
+      const pB = PRIORITY_ORDER[b.hkPriority] ?? 4
+      if (pA !== pB) return pA - pB
+      // Then by Score (Highest first)
+      return (b.grandScore || 0) - (a.grandScore || 0)
+    }
+    // Default: Newest first (already handled by useSubmissions fetch order)
+    return 0
+  })
+
+  const paginated = sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const totalPages = Math.ceil(sorted.length / itemsPerPage)
+
+  const counts = [...STATUS_TABS, ...CAMPUS_TABS].reduce((acc, tab) => {
+    acc[tab] = submissions.filter(s => isMatch(s, tab)).length
     return acc
   }, {})
 
@@ -1017,7 +1059,13 @@ function PendaftarPanel({ mobile }) {
       </GlassCard>
 
       <div className="dash-grid">
-        {Object.entries({ 'Total': submissions.length, 'Menunggu': counts['MENUNGGU'] || 0, 'Lolos': counts['LOLOS ADMIN'] || 0, 'Ditolak': counts['DITOLAK'] || 0 }).map(([k, v]) => (
+        {Object.entries({ 
+          'Total': submissions.length, 
+          'Draft': counts['DRAFT'] || 0,
+          'Menunggu': counts['MENUNGGU'] || 0, 
+          'Lolos': counts['LOLOS ADMIN'] || 0, 
+          'Ditolak': counts['DITOLAK'] || 0 
+        }).map(([k, v]) => (
           <div key={k} className="dash-info">
             <div className="dash-info-label">{k}</div>
             <div className="dash-info-value">{v}</div>
@@ -1025,17 +1073,32 @@ function PendaftarPanel({ mobile }) {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-        {ALL_TABS.map((tab) => (
-          <button key={tab}
-            className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}>
-            {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]})</span>
-          </button>
-        ))}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Status Pendaftaran</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+          {STATUS_TABS.map((tab) => (
+            <button key={tab}
+              className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}>
+              {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]})</span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Per Kampus Tujuan</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {CAMPUS_TABS.map((tab) => (
+            <button key={tab}
+              className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
+              style={{ borderColor: activeTab === tab ? 'var(--tosca-500)' : 'var(--ink-200)' }}
+              onClick={() => setActiveTab(tab)}>
+              {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]})</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {paginated.length === 0 ? (
         <GlassCard style={{ padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
           <h3 style={{ marginBottom: 8 }}>
@@ -1065,41 +1128,67 @@ function PendaftarPanel({ mobile }) {
           )}
         </GlassCard>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map((s) => (
-            <GlassCard key={s._idx} style={{ padding: mobile ? '12px 14px' : '14px 20px' }}>
-              <div style={{ display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'stretch' : 'center', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{s.fullName || '—'}</div>
-                    <PriorityPill priority={s.hkPriority} />
-                    {s.skorPrestasi > 0 && (
-                      <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--tosca-600)', color: '#fff' }}>
-                        P: {s.skorPrestasi}
-                      </span>
-                    )}
-                    {s.skorOrganisasi > 0 && (
-                      <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--amber-600)', color: '#fff' }}>
-                        O: {s.skorOrganisasi}
-                      </span>
-                    )}
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {paginated.map((s) => (
+              <GlassCard key={s._idx} style={{ padding: mobile ? '12px 14px' : '14px 20px' }}>
+                <div style={{ display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'stretch' : 'center', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{s.fullName || '—'}</div>
+                      <PriorityPill priority={s.hkPriority} />
+                      {(s.skorPrestasi > 0 || isCampusTab) && (
+                        <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--tosca-600)', color: '#fff' }}>
+                          P: {s.skorPrestasi || 0}
+                        </span>
+                      )}
+                      {(s.skorOrganisasi > 0 || isCampusTab) && (
+                        <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--amber-600)', color: '#fff' }}>
+                          O: {s.skorOrganisasi || 0}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>
+                      <span className="mono">{s.registrationNumber || 'ETOS-26-DEMO'}</span>
+                      {' · '}{s.province || '—'}
+                      {s.submittedAt && !mobile && <> · {s.submittedAt}</>}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>
-                    <span className="mono">{s.registrationNumber || 'ETOS-26-DEMO'}</span>
-                    {' · '}{s.province || '—'}
-                    {s.submittedAt && !mobile && <> · {s.submittedAt}</>}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTop: mobile ? '1px solid var(--ink-100)' : 'none', paddingTop: mobile ? 10 : 0 }}>
+                    <StatusPill status={s.status || 'submitted'} />
+                    <Button variant="outline-tosca" size="sm" onClick={() => setDetailId(s._idx)}>
+                      Detail
+                    </Button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTop: mobile ? '1px solid var(--ink-100)' : 'none', paddingTop: mobile ? 10 : 0 }}>
-                  <StatusPill status={s.status || 'submitted'} />
-                  <Button variant="outline-tosca" size="sm" onClick={() => setDetailId(s._idx)}>
-                    Detail
-                  </Button>
-                </div>
+              </GlassCard>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 24 }}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                disabled={currentPage === 1} 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              >
+                Sebelumnya
+              </Button>
+              <div style={{ fontSize: 13, color: 'var(--ink-600)' }}>
+                Halaman <strong>{currentPage}</strong> dari {totalPages}
               </div>
-            </GlassCard>
-          ))}
-        </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                disabled={currentPage === totalPages} 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              >
+                Berikutnya
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {confirmAction && (
@@ -1117,6 +1206,7 @@ function PendaftarPanel({ mobile }) {
     </div>
   )
 }
+
 
 // ─── AdminPanel: top-level wrapper with tab navigation ───────────────
 export function AdminPanel({ mobile }) {

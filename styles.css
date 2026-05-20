@@ -918,9 +918,9 @@ p {
   border-radius: var(--r-lg);
 }
 
-/* 4-column stats grid (Total, Menunggu, Lolos, Ditolak) */
+/* 5-column stats grid (Total, Draft, Menunggu, Lolos, Ditolak) */
 .admin-panel-wrap .dash-grid {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
 }
 
