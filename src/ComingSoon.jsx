@@ -70,7 +70,7 @@ export function ComingSoon({ registrationStart, onContinueLogin, mobile }) {
         <AbstractShapes />
         <div className="hero-content" style={{ position: 'relative', zIndex: 2, padding: mobile ? '40px 20px' : '60px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
-            <ILogo size={40} />
+            <img src="/logo-sistem.png" alt="Logo Etos ID" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
             <div>
               <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>Etos ID 2026</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>

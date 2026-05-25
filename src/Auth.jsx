@@ -15,7 +15,7 @@ function GoogleIcon({ size = 18 }) {
   )
 }
 
-export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile }) {
+export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile, isAdminPortal = false }) {
   const [email, setEmail]       = React.useState('')
   const [password, setPassword] = React.useState('')
   const [showPassword, setShowPassword] = React.useState(false)
@@ -140,14 +140,18 @@ export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>Etos ID</div>
               <div style={{ fontSize: 11, color: 'var(--ink-500)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Portal Pendaftaran
+                Portal {isAdminPortal ? 'Administrator' : 'Pendaftaran'}
               </div>
             </div>
           </div>
 
-          <h2 style={{ fontSize: mobile ? 22 : 26, marginBottom: 8 }}>Masuk ke portal</h2>
+          <h2 style={{ fontSize: mobile ? 22 : 26, marginBottom: 8 }}>
+            {isAdminPortal ? 'Login Khusus Admin' : 'Masuk ke portal'}
+          </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-600)', marginBottom: 24 }}>
-            Login dengan email yang sudah terdaftar untuk lanjutkan pendaftaran beasiswa.
+            {isAdminPortal 
+              ? 'Gunakan akun Google administrator yang sudah terdaftar.' 
+              : 'Login dengan email yang sudah terdaftar untuk lanjutkan pendaftaran beasiswa.'}
           </p>
 
           {/* Google OAuth */}
@@ -163,106 +167,110 @@ export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile
             Lanjutkan dengan Google
           </Button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 16px', color: 'var(--ink-400)', fontSize: 12 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--ink-200)' }} />
-            <span>atau</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--ink-200)' }} />
-          </div>
-
-          {/* Email + Password */}
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field label="Email">
-              <Input
-                type="email"
-                value={email}
-                onChange={e => { setEmail(e.target.value); setError(''); setInfo('') }}
-                placeholder="nama@email.com"
-                autoComplete="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                style={{ textTransform: 'lowercase' }}
-              />
-            </Field>
-
-            <Field label="Password" error={error}>
-              <div style={{ position: 'relative' }}>
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setError(''); setInfo('') }}
-                  placeholder="Masukkan password"
-                  autoComplete="current-password"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  style={{ paddingRight: 44 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  style={{
-                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--ink-400)', padding: 4, display: 'flex', alignItems: 'center'
-                  }}
-                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                >
-                  {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  )}
-                </button>
+          {!isAdminPortal && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 16px', color: 'var(--ink-400)', fontSize: 12 }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--ink-200)' }} />
+                <span>atau</span>
+                <div style={{ flex: 1, height: 1, background: 'var(--ink-200)' }} />
               </div>
-            </Field>
 
-            {info && (
-              <div style={{ padding: '10px 14px', background: 'rgba(20, 184, 166, 0.08)', borderRadius: 10, border: '1px solid rgba(20, 184, 166, 0.25)', fontSize: 12, color: 'var(--tosca-700)', lineHeight: 1.55 }}>
-                {info}
-              </div>
-            )}
+              {/* Email + Password */}
+              <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <Field label="Email">
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setError(''); setInfo('') }}
+                    placeholder="nama@email.com"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    style={{ textTransform: 'lowercase' }}
+                  />
+                </Field>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, marginTop: -4 }}>
-              <button type="button" onClick={handleResend} disabled={resending} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
-                {resending ? 'Mengirim…' : 'Kirim ulang konfirmasi email'}
-              </button>
-              <button type="button" onClick={() => setShowForgot(v => !v)} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
-                Lupa password?
-              </button>
-            </div>
+                <Field label="Password" error={error}>
+                  <div style={{ position: 'relative' }}>
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={e => { setPassword(e.target.value); setError(''); setInfo('') }}
+                      placeholder="Masukkan password"
+                      autoComplete="current-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      style={{ paddingRight: 44 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      style={{
+                        position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--ink-400)', padding: 4, display: 'flex', alignItems: 'center'
+                      }}
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showPassword ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </Field>
 
-            {showForgot && (
-              <div style={{ padding: 14, background: 'var(--ink-50)', borderRadius: 10, border: '1px solid var(--ink-100)', fontSize: 12, lineHeight: 1.6 }}>
-                Reset password akan dikirim ke <strong>{email || 'email kamu'}</strong>. Pastikan email di atas benar.
-                <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-                  <Button variant="primary" size="sm" onClick={handleForgot}>Kirim link reset</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setShowForgot(false)}>Batal</Button>
+                {info && (
+                  <div style={{ padding: '10px 14px', background: 'rgba(20, 184, 166, 0.08)', borderRadius: 10, border: '1px solid rgba(20, 184, 166, 0.25)', fontSize: 12, color: 'var(--tosca-700)', lineHeight: 1.55 }}>
+                    {info}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, marginTop: -4 }}>
+                  <button type="button" onClick={handleResend} disabled={resending} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
+                    {resending ? 'Mengirim…' : 'Kirim ulang konfirmasi email'}
+                  </button>
+                  <button type="button" onClick={() => setShowForgot(v => !v)} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
+                    Lupa password?
+                  </button>
                 </div>
-              </div>
-            )}
 
-            <Button variant="primary" block size="lg" type="submit" loading={loading} style={{ height: 52, fontSize: 16, marginTop: 4 }}>
-              Masuk
-            </Button>
-          </form>
+                {showForgot && (
+                  <div style={{ padding: 14, background: 'var(--ink-50)', borderRadius: 10, border: '1px solid var(--ink-100)', fontSize: 12, lineHeight: 1.6 }}>
+                    Reset password akan dikirim ke <strong>{email || 'email kamu'}</strong>. Pastikan email di atas benar.
+                    <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+                      <Button variant="primary" size="sm" onClick={handleForgot}>Kirim link reset</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowForgot(false)}>Batal</Button>
+                    </div>
+                  </div>
+                )}
 
-          {onSwitchToRegister && (
-            <p style={{ fontSize: 13, color: 'var(--ink-600)', marginTop: 20, textAlign: 'center' }}>
-              Belum punya akun?{' '}
-              <button type="button" onClick={onSwitchToRegister} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 700 }}>
-                Daftar di sini
-              </button>
-            </p>
+                <Button variant="primary" block size="lg" type="submit" loading={loading} style={{ height: 52, fontSize: 16, marginTop: 4 }}>
+                  Masuk
+                </Button>
+              </form>
+
+              {onSwitchToRegister && (
+                <p style={{ fontSize: 13, color: 'var(--ink-600)', marginTop: 20, textAlign: 'center' }}>
+                  Belum punya akun?{' '}
+                  <button type="button" onClick={onSwitchToRegister} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 700 }}>
+                    Daftar di sini
+                  </button>
+                </p>
+              )}
+
+              <p style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 16, lineHeight: 1.55 }}>
+                Dengan melanjutkan, Anda menyetujui <a className="link" href="#">Ketentuan Penggunaan</a> dan <a className="link" href="#">Kebijakan Privasi</a> GREAT Edunesia.
+              </p>
+            </>
           )}
-
-          <p style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 16, lineHeight: 1.55 }}>
-            Dengan melanjutkan, Anda menyetujui <a className="link" href="#">Ketentuan Penggunaan</a> dan <a className="link" href="#">Kebijakan Privasi</a> GREAT Edunesia.
-          </p>
         </div>
       </div>
     </div>

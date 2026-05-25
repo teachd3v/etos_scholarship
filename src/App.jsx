@@ -171,9 +171,10 @@ function AdminApp() {
       <div className="app-shell" data-theme={theme}>
         <AuthScreen 
           onAuthenticated={() => {}} 
-          onSwitchToRegister={() => {}} 
+          onSwitchToRegister={null} 
           onBack={() => { window.location.href = '/' }} 
           mobile={mobile} 
+          isAdminPortal={true}
         />
       </div>
     )
