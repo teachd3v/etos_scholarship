@@ -15,6 +15,7 @@ export const BLANK_FORM = {
   admissionProofFile: null,
   photoFile: null, fullName: '', nickname: '', nik: '', noKK: '', birthPlace: '', birthDate: '', gender: '',
   religion: '', email: '', phone: '', instagram: '', domisiliProvinsi: '', domisiliKota: '', domisiliKecamatan: '', address: '',
+  ktpFile: null,
   fatherName: '', fatherCondition: '', fatherJob: '', fatherJobOther: '', fatherIncome: '',
   motherName: '', motherCondition: '', motherJob: '', motherJobOther: '', motherIncome: '',
   guardianName: '', guardianJob: '', guardianJobOther: '',
@@ -24,6 +25,7 @@ export const BLANK_FORM = {
   siblingsHighSchool: 0, siblingsElementary: 0, grandparentsCount: 0,
   houseStatus: '', electricPower: '',
   housePhotoFile: null, kitchenPhotoFile: null,
+  salarySlipFile: null,
   noAchievement: false,
   noOrganization: false,
   achievements: [],
@@ -76,6 +78,7 @@ export function validateStep(step, form, cfg = DEFAULT_CONFIG) {
     set('domisiliKota',      required(form.domisiliKota))
     set('domisiliKecamatan', required(form.domisiliKecamatan))
     set('address', required(form.address))
+    set('ktpFile', required(form.ktpFile))
   }
 
   if (step === 2) {
@@ -106,6 +109,7 @@ export function validateStep(step, form, cfg = DEFAULT_CONFIG) {
     set('houseStatus',    required(form.houseStatus))
     set('electricPower',  required(form.electricPower))
     set('housePhotoFile', required(form.housePhotoFile))
+    set('salarySlipFile', required(form.salarySlipFile))
   }
 
   if (step === 4) {

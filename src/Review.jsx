@@ -89,6 +89,7 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
             ['Link Instagram',     form.instagram],
             ['Domisili',           [form.domisiliKecamatan, form.domisiliKota, form.domisiliProvinsi].filter(Boolean).join(', ')],
             ['Alamat lengkap',     form.address],
+            ['Foto KTP',           <FileThumb file={form.ktpFile} />],
             ['Kampus tujuan',      form.province],
             ['Program studi',      form.studyProgram],
           ], 1)}
@@ -125,6 +126,7 @@ export function Review({ form, onEdit, onSubmit, onBack, mobile }) {
             ['Kakek / Nenek',              String(form.grandparentsCount        ?? 0)],
             ['Status rumah',       (form.houseStatus || '').toUpperCase()],
             ['Daya listrik',       (form.electricPower || '').toUpperCase()],
+            ['Slip Gaji / Ket. Penghasilan', <FileThumb file={form.salarySlipFile} />],
             ['Foto tampak depan rumah', <FileThumb file={form.housePhotoFile} />],
             ['Foto ruangan dapur', <FileThumb file={form.kitchenPhotoFile} />],
           ], 3)}

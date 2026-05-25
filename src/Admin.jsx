@@ -43,10 +43,12 @@ const PRIORITY_ORDER = {
 const DOC_TYPE_TO_SUB_FIELD = {
   photo:           'photoFile',
   kk:              'kkFile',
+  ktp:             'ktpFile',
   ijazah:          'ijazahFile',
   admission_proof: 'admissionProofFile',
   house_photo:     'housePhotoFile',
   kitchen_photo:   'kitchenPhotoFile',
+  salary_slip:     'salarySlipFile',
 }
 
 function mapApplicantRowToSubmission(row, achievements = [], organizations = [], documents = []) {
@@ -63,10 +65,12 @@ function mapApplicantRowToSubmission(row, achievements = [], organizations = [],
     submittedAt:        form.submittedAt || null,
     photoFile:          null,
     kkFile:             null,
+    ktpFile:            null,
     admissionProofFile: null,
     ijazahFile:         null,
     housePhotoFile:     null,
     kitchenPhotoFile:   null,
+    salarySlipFile:     null,
     fotoProfil:         null,   // legacy alias untuk display avatar
     achievements: (achievements || []).map(a => ({
       title: a.title || '', level: a.level || '', rank: a.rank || '',
@@ -446,6 +450,14 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
             <div className="kv-label">Alamat lengkap</div>
             <div className="kv-value">{submission.address || <span className="muted">—</span>}</div>
           </div>
+          <div className="kv" style={{ gridColumn: '1 / -1' }}>
+            <div className="kv-label">Dokumen KTP</div>
+            <div className="kv-value">
+              {submission.ktpFile?.url
+                ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.ktpFile.url, title: 'Foto KTP' })}>Lihat KTP</Button>
+                : <span className="muted">Tidak diunggah</span>}
+            </div>
+          </div>
         </div>
         {renderVerifyBlock('data_pribadi')}
       </SectionCard>
@@ -510,6 +522,9 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
           {submission.kitchenPhotoFile?.url
             ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.kitchenPhotoFile.url, title: 'FOTO RUANGAN DAPUR' })}>LIHAT FOTO DAPUR</Button>
             : <span className="muted" style={{ fontSize: 13 }}>FOTO DAPUR: TIDAK DIUNGGAH</span>}
+          {submission.salarySlipFile?.url
+            ? <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.salarySlipFile.url, title: 'SLIP GAJI / KET. PENGHASILAN' })}>LIHAT SLIP GAJI</Button>
+            : <span className="muted" style={{ fontSize: 13 }}>SLIP GAJI: TIDAK DIUNGGAH</span>}
         </div>
         {renderVerifyBlock('kondisi_ekonomi')}
       </SectionCard>

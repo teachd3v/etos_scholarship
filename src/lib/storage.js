@@ -17,9 +17,11 @@ const FILE_LIMITS = {
   ijazah:          { maxBytes: 2_000_000, mimes: ['application/pdf', 'image/jpeg', 'image/png'] },
   admission_proof: { maxBytes: 2_000_000, mimes: ['application/pdf', 'image/jpeg', 'image/png'] },
   photo:           { maxBytes: 5_000_000, mimes: ['image/jpeg', 'image/png'] },
+  ktp:             { maxBytes: 2_000_000, mimes: ['application/pdf', 'image/jpeg', 'image/png'] },
   kk:              { maxBytes: 2_000_000, mimes: ['application/pdf', 'image/jpeg', 'image/png'] },
   house_photo:     { maxBytes: 5_000_000, mimes: ['image/jpeg', 'image/png'] },
   kitchen_photo:   { maxBytes: 5_000_000, mimes: ['image/jpeg', 'image/png'] },
+  salary_slip:     { maxBytes: 2_000_000, mimes: ['application/pdf', 'image/jpeg', 'image/png'] },
 }
 
 const MIME_TO_EXT = {

@@ -212,7 +212,114 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
         <Textarea value={form.address} error={errors.address} onChange={(e) => setField('address', e.target.value)}
           placeholder="Contoh: Jl. Melati No. 12 RT 03/RW 02, Desa Sukamaju, Kec. Ciawi, Kab. Bogor, Jawa Barat" />
       </Field>
+
+      {/* ── Unggah KTP ── */}
+      <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px dashed var(--ink-200)' }}>
+        <KtpUpload form={form} setField={setField} errors={errors} applicantId={applicantId} />
+      </div>
     </StepContainer>
+  )
+}
+
+function KtpUpload({ form, setField, errors, applicantId }) {
+  const inputRef = React.useRef(null)
+  const { upload, remove, uploading, error } = useFileUpload({
+    docType: 'ktp', fieldKey: 'ktpFile',
+    currentFile: form.ktpFile, applicantId, setField,
+  })
+
+  const isImage = (file) => file && (
+    /\.(jpg|jpeg|png|webp)$/i.test(file.name || '') ||
+    (file.mime && file.mime.startsWith('image/'))
+  )
+
+  return (
+    <Field label="Foto KTP (Wajib)" required error={errors.ktpFile || error}>
+      <input type="file" ref={inputRef} accept=".pdf,.jpg,.jpeg,.png"
+        style={{ display: 'none' }} onChange={(e) => upload(e.target.files[0])} />
+      {!form.ktpFile ? (
+        <div className="upload-well" onClick={() => !uploading && inputRef.current.click()}
+          style={{ cursor: uploading ? 'wait' : 'pointer', borderColor: errors.ktpFile ? 'var(--danger-500)' : undefined }}>
+          <div className="uw-icon"><IFile size={20} /></div>
+          <div style={{ flex: 1 }}>
+            <div className="uw-title">Unggah Foto KTP</div>
+            <div className="uw-sub">PDF/JPG/PNG · maks 2 MB</div>
+          </div>
+          <Button variant="outline-tosca" size="sm" loading={uploading}
+            onClick={(e) => { e.stopPropagation(); inputRef.current.click() }}>
+            {uploading ? 'Mengupload…' : 'Pilih file'}
+          </Button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+          {isImage(form.ktpFile) ? (
+            <img src={form.ktpFile.url} alt="KTP preview"
+              style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ink-200)', flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 120, height: 80, borderRadius: 8, background: 'var(--ink-50)', border: '1px solid var(--ink-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <IFile size={28} style={{ color: 'var(--tosca-600)' }} />
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.ktpFile.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.ktpFile.size / 1024).toFixed(0)} KB · Tersimpan</div>
+            <Button variant="ghost" size="sm" loading={uploading} style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+              onClick={remove}>Hapus</Button>
+          </div>
+        </div>
+      )}
+    </Field>
+  )
+}
+
+function SalarySlipUpload({ form, setField, errors, applicantId }) {
+  const inputRef = React.useRef(null)
+  const { upload, remove, uploading, error } = useFileUpload({
+    docType: 'salary_slip', fieldKey: 'salarySlipFile',
+    currentFile: form.salarySlipFile, applicantId, setField,
+  })
+
+  const isImage = (file) => file && (
+    /\.(jpg|jpeg|png|webp)$/i.test(file.name || '') ||
+    (file.mime && file.mime.startsWith('image/'))
+  )
+
+  return (
+    <Field label="Slip Gaji / Surat Keterangan Penghasilan (Wajib)" required error={errors.salarySlipFile || error}>
+      <input type="file" ref={inputRef} accept=".pdf,.jpg,.jpeg,.png"
+        style={{ display: 'none' }} onChange={(e) => upload(e.target.files[0])} />
+      {!form.salarySlipFile ? (
+        <div className="upload-well" onClick={() => !uploading && inputRef.current.click()}
+          style={{ cursor: uploading ? 'wait' : 'pointer', borderColor: errors.salarySlipFile ? 'var(--danger-500)' : undefined }}>
+          <div className="uw-icon"><IFile size={20} /></div>
+          <div style={{ flex: 1 }}>
+            <div className="uw-title">Unggah Slip Gaji / Ket. Penghasilan</div>
+            <div className="uw-sub">PDF/JPG/PNG · maks 2 MB</div>
+          </div>
+          <Button variant="outline-tosca" size="sm" loading={uploading}
+            onClick={(e) => { e.stopPropagation(); inputRef.current.click() }}>
+            {uploading ? 'Mengupload…' : 'Pilih file'}
+          </Button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+          {isImage(form.salarySlipFile) ? (
+            <img src={form.salarySlipFile.url} alt="Slip Gaji preview"
+              style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--ink-200)', flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 120, height: 80, borderRadius: 8, background: 'var(--ink-50)', border: '1px solid var(--ink-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <IFile size={28} style={{ color: 'var(--tosca-600)' }} />
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.salarySlipFile.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{(form.salarySlipFile.size / 1024).toFixed(0)} KB · Tersimpan</div>
+            <Button variant="ghost" size="sm" loading={uploading} style={{ marginTop: 8, color: 'var(--danger-500)', padding: '2px 0' }}
+              onClick={remove}>Hapus</Button>
+          </div>
+        </div>
+      )}
+    </Field>
   )
 }
 
@@ -545,6 +652,11 @@ function Step3Ekonomi({ form, setField, errors, mobile, applicantId }) {
             </Select>
           </Field>
         </div>
+      </div>
+
+      {/* ── Unggah Slip Gaji ── */}
+      <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px dashed var(--ink-200)' }}>
+        <SalarySlipUpload form={form} setField={setField} errors={errors} applicantId={applicantId} />
       </div>
 
       {/* ── Foto rumah ── */}

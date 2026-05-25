@@ -19,16 +19,18 @@ import { loadApplicantDocuments } from './storage.js'
 const DOC_TYPE_TO_FIELD = {
   photo:           'photoFile',
   kk:              'kkFile',
+  ktp:             'ktpFile',
   house_photo:     'housePhotoFile',
   kitchen_photo:   'kitchenPhotoFile',
   ijazah:          'ijazahFile',
   admission_proof: 'admissionProofFile',
+  salary_slip:     'salarySlipFile',
 }
 
 // File fields yang TIDAK di-persist via tabel applicants (di-handle di Fase 4 via Storage).
 const FILE_FIELDS = new Set([
-  'ijazahFile', 'admissionProofFile', 'photoFile',
-  'kkFile', 'housePhotoFile', 'kitchenPhotoFile',
+  'ijazahFile', 'admissionProofFile', 'photoFile', 'ktpFile',
+  'kkFile', 'housePhotoFile', 'kitchenPhotoFile', 'salarySlipFile',
 ])
 
 // State-only fields (tidak dipersist atau dihitung server-side)
