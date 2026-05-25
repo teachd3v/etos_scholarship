@@ -12,6 +12,7 @@ import { FormShell } from './FormShell.jsx'
 import { Review } from './Review.jsx'
 import { Success } from './Success.jsx'
 import { AdminPanel } from './Admin.jsx'
+import { Landing } from './Landing.jsx'
 import { useFormConfig } from './lib/FormConfigContext.jsx'
 import { DEFAULT_CONFIG } from './lib/defaultConfig.js'
 import { getSession, getProfile, onAuthStateChange, signOut } from './lib/auth.js'
@@ -98,33 +99,44 @@ function AdminUnauthorized({ theme, onBack }) {
 /* ─── Admin App Wrapper ─────────────────────────────────── */
 function AdminApp() {
   const [theme, setTheme] = React.useState(() => localStorage.getItem('etos_theme') || 'light')
-  const [authStatus, setAuthStatus] = React.useState('loading') // 'loading' | 'authorized' | 'unauthorized'
+  const [session, setSession] = React.useState(null)
+  const [authStatus, setAuthStatus] = React.useState('loading') // 'loading' | 'authorized' | 'unauthorized' | 'unauthenticated'
   const [mobile, setMobile] = React.useState(window.innerWidth < 768)
+
+  const checkAdmin = React.useCallback(async (currSession) => {
+    if (!currSession) {
+      setAuthStatus('unauthenticated')
+      return
+    }
+    try {
+      const profile = await getProfile()
+      setAuthStatus(profile?.role === 'admin' ? 'authorized' : 'unauthorized')
+    } catch {
+      setAuthStatus('unauthorized')
+    }
+  }, [])
 
   React.useEffect(() => {
     let cancelled = false
-
-    const checkAdmin = async () => {
+    const bootstrap = async () => {
       try {
-        const session = await getSession()
+        const s = await getSession()
         if (cancelled) return
-        if (!session) { setAuthStatus('unauthorized'); return }
-        const profile = await getProfile()
-        if (cancelled) return
-        setAuthStatus(profile?.role === 'admin' ? 'authorized' : 'unauthorized')
+        setSession(s)
+        await checkAdmin(s)
       } catch {
-        if (!cancelled) setAuthStatus('unauthorized')
+        if (!cancelled) setAuthStatus('unauthenticated')
       }
     }
-    checkAdmin()
+    bootstrap()
 
-    // Re-check kalau auth state berubah (logout dari tab lain, dll)
-    const unsubscribe = onAuthStateChange(({ event }) => {
-      if (event === 'SIGNED_OUT') setAuthStatus('unauthorized')
-      else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') checkAdmin()
+    const unsubscribe = onAuthStateChange(({ event, session: newSession }) => {
+      setSession(newSession)
+      if (event === 'SIGNED_OUT') setAuthStatus('unauthenticated')
+      else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') checkAdmin(newSession)
     })
     return () => { cancelled = true; unsubscribe() }
-  }, [])
+  }, [checkAdmin])
 
   React.useEffect(() => {
     const handleResize = () => setMobile(window.innerWidth < 768)
@@ -139,7 +151,8 @@ function AdminApp() {
 
   const handleLogout = async () => {
     try { await signOut() } catch { /* ignore */ }
-    window.location.href = '/'
+    setSession(null)
+    setAuthStatus('unauthenticated')
   }
 
   if (authStatus === 'loading') {
@@ -147,8 +160,21 @@ function AdminApp() {
       <div className="app-shell" data-theme={theme}>
         <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
           <div className="spinner" style={{ width: 40, height: 40, color: 'var(--tosca-600)' }}></div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-500)', letterSpacing: '0.1em' }}>VERIFIKASI ADMIN...</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-500)', letterSpacing: '0.1em' }}>VERIFIKASI AKSES...</div>
         </div>
+      </div>
+    )
+  }
+
+  if (authStatus === 'unauthenticated') {
+    return (
+      <div className="app-shell" data-theme={theme}>
+        <AuthScreen 
+          onAuthenticated={() => {}} 
+          onSwitchToRegister={() => {}} 
+          onBack={() => { window.location.href = '/' }} 
+          mobile={mobile} 
+        />
       </div>
     )
   }
@@ -163,7 +189,7 @@ function AdminApp() {
       <header className="main-header">
         <div className="header-container">
           <div className="brand" style={{ cursor: 'default' }}>
-            <ILogo size={28} />
+            <img src="/logo-sistem.png" alt="Logo Etos ID" style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
             <div>
               <div className="brand-name">Etos ID 2026</div>
               <div className="brand-tag">Panel Administrasi</div>
@@ -286,7 +312,7 @@ export default function App() {
 
     setScreen(prev => {
       if (prev !== 'loading') return prev
-      if (!session) return 'auth'
+      if (!session) return 'landing'
       const hasDraft = form.province || form.is_submitted
       return hasDraft ? 'dashboard' : 'onboarding'
     })
@@ -296,7 +322,7 @@ export default function App() {
   React.useEffect(() => {
     if (sessionLoading || configLoading) return
     if (!session || !applicantLoaded) return
-    if (screen === 'auth' || screen === 'register') {
+    if (screen === 'auth' || screen === 'register' || screen === 'landing') {
       const hasDraft = form.province || form.is_submitted
       setScreen(hasDraft ? 'dashboard' : 'onboarding')
     }
@@ -344,11 +370,20 @@ export default function App() {
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-500)', letterSpacing: '0.05em' }}>MEMUAT SISTEM...</div>
       </div>
     )
+  } else if (screen === 'landing') {
+    content = (
+      <Landing 
+        onProceedToRegister={() => setScreen('register')} 
+        onProceedToLogin={() => setScreen('auth')} 
+        mobile={mobile} 
+      />
+    )
   } else if (screen === 'auth') {
     content = (
       <AuthScreen
         onAuthenticated={() => { /* state transition handled by session listener */ }}
         onSwitchToRegister={() => setScreen('register')}
+        onBack={() => setScreen('landing')}
         mobile={mobile}
       />
     )
@@ -359,11 +394,18 @@ export default function App() {
         <AuthScreen
           onAuthenticated={() => {}}
           onSwitchToRegister={() => {}}
+          onBack={() => setScreen('landing')}
           mobile={mobile}
         />
       )
     } else {
-      content = <RegisterScreen onSwitchToLogin={() => setScreen('auth')} mobile={mobile} />
+      content = (
+        <RegisterScreen 
+          onSwitchToLogin={() => setScreen('auth')} 
+          onBack={() => setScreen('landing')}
+          mobile={mobile} 
+        />
+      )
     }
   } else if (screen === 'onboarding' || screen === 'dashboard') {
     const isFormLocked = form.status === 'approved' || form.status === 'rejected'
@@ -415,7 +457,7 @@ export default function App() {
         <header className="main-header">
           <div className="header-container">
             <div className="brand" onClick={() => setScreen('dashboard')} style={{ cursor: 'pointer' }}>
-              <ILogo size={28} />
+              <img src="/logo-sistem.png" alt="Logo Etos ID" style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
               <div>
                 <div className="brand-name">Etos ID 2026</div>
                 <div className="brand-tag">Seleksi Beasiswa</div>

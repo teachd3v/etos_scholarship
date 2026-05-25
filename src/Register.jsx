@@ -1,6 +1,6 @@
 // Register.jsx — halaman daftar akun baru (Supabase email/password + Google OAuth)
 import React from 'react'
-import { ICheck, IStar, ILock, ILogo } from './Icons.jsx'
+import { ICheck, IStar, ILock, ILogo, IChevronLeft } from './Icons.jsx'
 import { AbstractShapes, Button, Field, Input } from './Primitives.jsx'
 import { signUp, signInWithGoogle } from './lib/auth.js'
 
@@ -19,7 +19,7 @@ function RegistrationSuccess({ email, onSwitchToLogin }) {
   return (
     <div className="auth-form" style={{ textAlign: 'center' }}>
       <div className="auth-logo" style={{ justifyContent: 'center' }}>
-        <ILogo size={36} />
+        <img src="/logo-sistem.png" alt="Logo Etos ID" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
       </div>
       <div style={{
         width: 80, height: 80, borderRadius: '50%', background: 'rgba(20, 184, 166, 0.1)',
@@ -43,7 +43,7 @@ function RegistrationSuccess({ email, onSwitchToLogin }) {
   )
 }
 
-export function RegisterScreen({ onSwitchToLogin, mobile }) {
+export function RegisterScreen({ onSwitchToLogin, onBack, mobile }) {
   const [fullName, setFullName] = React.useState('')
   const [email, setEmail]       = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -128,8 +128,21 @@ export function RegisterScreen({ onSwitchToLogin, mobile }) {
           <RegistrationSuccess email={submittedEmail} onSwitchToLogin={onSwitchToLogin} />
         ) : (
           <div className="auth-form">
+            <div style={{ marginBottom: 24 }}>
+              <button 
+                onClick={onBack}
+                style={{ 
+                  background: 'none', border: 'none', color: 'var(--ink-500)', 
+                  fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', 
+                  gap: 6, cursor: 'pointer', padding: '4px 0' 
+                }}
+              >
+                <IChevronLeft size={16} /> Kembali
+              </button>
+            </div>
+
             <div className="auth-logo">
-              <ILogo size={36} />
+              <img src="/logo-sistem.png" alt="Logo Etos ID" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>Etos ID</div>
                 <div style={{ fontSize: 11, color: 'var(--ink-500)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>

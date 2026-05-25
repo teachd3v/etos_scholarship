@@ -38,10 +38,9 @@ export function TimelineGate({ session, mobile, children }) {
   // Loading config → tampilkan loading inline (children sendiri yang handle skeleton)
   if (loading) return children
 
-  // Pre-registration: tampilkan ComingSoon kecuali (a) user sudah login (bypass),
-  // (b) user klik tombol "Sudah Punya Akun? Login" → render Auth screen.
-  // Admin route sendiri di-bypass di App.jsx sebelum gate ini di-mount.
-  if (phase === 'PRE_REGISTRATION' && !session && !proceedToLogin) {
+  // Pre-registration: tampilkan ComingSoon (strict) kecuali user klik "Login" (jika tersedia).
+  // Admin route di-bypass di App.jsx, jadi admin tetap bisa masuk via /admin.
+  if (phase === 'PRE_REGISTRATION' && !proceedToLogin) {
     return (
       <ComingSoon
         registrationStart={config.timeline.registration_start}

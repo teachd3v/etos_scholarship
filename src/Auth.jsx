@@ -1,6 +1,6 @@
 // Auth.jsx — Login screen (Supabase email/password + Google OAuth)
 import React from 'react'
-import { ICheck, IStar, ILock, ILogo } from './Icons.jsx'
+import { ICheck, IStar, ILock, ILogo, IChevronLeft } from './Icons.jsx'
 import { AbstractShapes, Button, Field, Input } from './Primitives.jsx'
 import { signIn, signInWithGoogle, resendConfirmation, requestPasswordReset } from './lib/auth.js'
 
@@ -15,7 +15,7 @@ function GoogleIcon({ size = 18 }) {
   )
 }
 
-export function AuthScreen({ onAuthenticated, onSwitchToRegister, mobile }) {
+export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile }) {
   const [email, setEmail]       = React.useState('')
   const [password, setPassword] = React.useState('')
   const [showPassword, setShowPassword] = React.useState(false)
@@ -122,8 +122,21 @@ export function AuthScreen({ onAuthenticated, onSwitchToRegister, mobile }) {
 
       <div className="auth-form-panel">
         <div className="auth-form">
+          <div style={{ marginBottom: 24 }}>
+            <button 
+              onClick={onBack}
+              style={{ 
+                background: 'none', border: 'none', color: 'var(--ink-500)', 
+                fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', 
+                gap: 6, cursor: 'pointer', padding: '4px 0' 
+              }}
+            >
+              <IChevronLeft size={16} /> Kembali
+            </button>
+          </div>
+          
           <div className="auth-logo">
-            <ILogo size={36} />
+            <img src="/logo-sistem.png" alt="Logo Etos ID" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>Etos ID</div>
               <div style={{ fontSize: 11, color: 'var(--ink-500)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -238,12 +251,14 @@ export function AuthScreen({ onAuthenticated, onSwitchToRegister, mobile }) {
             </Button>
           </form>
 
-          <p style={{ fontSize: 13, color: 'var(--ink-600)', marginTop: 20, textAlign: 'center' }}>
-            Belum punya akun?{' '}
-            <button type="button" onClick={onSwitchToRegister} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 700 }}>
-              Daftar di sini
-            </button>
-          </p>
+          {onSwitchToRegister && (
+            <p style={{ fontSize: 13, color: 'var(--ink-600)', marginTop: 20, textAlign: 'center' }}>
+              Belum punya akun?{' '}
+              <button type="button" onClick={onSwitchToRegister} style={{ background: 'none', border: 'none', color: 'var(--tosca-700)', cursor: 'pointer', padding: 0, fontWeight: 700 }}>
+                Daftar di sini
+              </button>
+            </p>
+          )}
 
           <p style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 16, lineHeight: 1.55 }}>
             Dengan melanjutkan, Anda menyetujui <a className="link" href="#">Ketentuan Penggunaan</a> dan <a className="link" href="#">Kebijakan Privasi</a> GREAT Edunesia.

@@ -108,11 +108,6 @@ export function ComingSoon({ registrationStart, onContinueLogin, mobile }) {
             <Button variant="primary" size="lg" disabled title="Pendaftaran belum dibuka">
               Daftar Sekarang
             </Button>
-            {/* Login tetap aktif — admin perlu akses panel kapan saja, user existing
-                bisa cek status. Pendaftaran (signUp) yang di-block oleh trigger DB. */}
-            <Button variant="outline-tosca" size="lg" onClick={onContinueLogin} style={{ background: 'rgba(255,255,255,0.95)' }}>
-              Sudah Punya Akun? Login
-            </Button>
           </div>
 
           <div style={{ position: 'absolute', bottom: 24, fontSize: 12, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.02em' }}>
