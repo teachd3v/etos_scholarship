@@ -4,6 +4,7 @@ import { IEdit, IAlert, IChevronLeft, ISend, ICheck, IFile } from './Icons.jsx'
 import { GlassCard, Button, Checkbox } from './Primitives.jsx'
 
 const formatRp = (raw) => {
+  if (raw === 0 || raw === '0') return 'Rp 0'
   const n = parseInt(String(raw || '').replace(/\D/g, ''), 10)
   return isNaN(n) ? '—' : 'Rp ' + n.toLocaleString('id-ID')
 }

@@ -236,6 +236,7 @@ function ActionConfirmModal({ action, onConfirm, onCancel, mobile }) {
 }
 
 const formatRp = (raw) => {
+  if (raw === 0 || raw === '0') return 'Rp 0'
   const n = parseInt(String(raw || '').replace(/\D/g, ''), 10)
   return isNaN(n) ? '—' : 'Rp ' + n.toLocaleString('id-ID')
 }

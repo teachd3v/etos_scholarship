@@ -208,30 +208,33 @@ export function calculateHadKifayah(form, std) {
   
   const totalOrang = kkCount + ak1Count + ak2Count + ak3Count
 
+  // Helper untuk safe BigInt dari std database (prevents crash on null/undefined)
+  const B = (val) => BigInt(val || 0)
+
   // ── 7 Dimensi Had Kifayah ──
 
   // Dimensi 1: Ibadah
   const dimIbadah = Number(
-    (BigInt(kkCount)  * BigInt(std.prayer_kk)) +
-    (BigInt(ak1Count) * BigInt(std.prayer_ak1)) +
-    (BigInt(ak2Count) * BigInt(std.prayer_ak2)) +
-    (BigInt(ak3Count) * BigInt(std.prayer_prayer_ak3 || std.prayer_ak3))
+    (BigInt(kkCount)  * B(std.prayer_kk)) +
+    (BigInt(ak1Count) * B(std.prayer_ak1)) +
+    (BigInt(ak2Count) * B(std.prayer_ak2)) +
+    (BigInt(ak3Count) * B(std.prayer_ak3))
   )
 
   // Dimensi 2: Pangan
   const dimPangan = Number(
-    (BigInt(kkCount)  * BigInt(std.food_kk)) +
-    (BigInt(ak1Count) * BigInt(std.food_ak1)) +
-    (BigInt(ak2Count) * BigInt(std.food_ak2)) +
-    (BigInt(ak3Count) * BigInt(std.food_ak3))
+    (BigInt(kkCount)  * B(std.food_kk)) +
+    (BigInt(ak1Count) * B(std.food_ak1)) +
+    (BigInt(ak2Count) * B(std.food_ak2)) +
+    (BigInt(ak3Count) * B(std.food_ak3))
   )
 
   // Dimensi 3: Pakaian
   const dimPakaian = Number(
-    (BigInt(kkCount)  * BigInt(std.clothes_kk)) +
-    (BigInt(ak1Count) * BigInt(std.clothes_ak1)) +
-    (BigInt(ak2Count) * BigInt(std.clothes_ak2)) +
-    (BigInt(ak3Count) * BigInt(std.clothes_ak3))
+    (BigInt(kkCount)  * B(std.clothes_kk)) +
+    (BigInt(ak1Count) * B(std.clothes_ak1)) +
+    (BigInt(ak2Count) * B(std.clothes_ak2)) +
+    (BigInt(ak3Count) * B(std.clothes_ak3))
   )
 
   // Dimensi 4: Tempat Tinggal (House + Power)
@@ -245,16 +248,16 @@ export function calculateHadKifayah(form, std) {
   if (pStat === '900 WATT') powerMult = 2
   if (pStat === '>900 WATT') powerMult = 3
 
-  const dimTempatTinggal = Number((BigInt(std.own_house) * BigInt(houseMult)) + (BigInt(std.power_house) * BigInt(powerMult)))
+  const dimTempatTinggal = Number((B(std.own_house) * BigInt(houseMult)) + (B(std.power_house) * BigInt(powerMult)))
 
   // Dimensi 5: Kesehatan
-  const dimKesehatan = Number(BigInt(totalOrang) * BigInt(std.health))
+  const dimKesehatan = Number(BigInt(totalOrang) * B(std.health))
 
   // Dimensi 6: Pendidikan
-  const dimPendidikan = Number(BigInt(ak2Count + ak3Count) * BigInt(std.education))
+  const dimPendidikan = Number(BigInt(ak2Count + ak3Count) * B(std.education))
 
   // Dimensi 7: Transportasi
-  const dimTransportasi = Number(BigInt(totalOrang) * BigInt(std.transport))
+  const dimTransportasi = Number(BigInt(totalOrang) * B(std.transport))
 
   // Total Had Kifayah
   const total_had_kifayah = dimIbadah + dimPangan + dimPakaian + dimTempatTinggal + dimKesehatan + dimPendidikan + dimTransportasi
