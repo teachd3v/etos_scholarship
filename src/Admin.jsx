@@ -133,8 +133,8 @@ function useSubmissions() {
 
       const ids = rows.map(r => r.id)
       const [{ data: ach = [] }, { data: orgs = [] }, { data: docs = [] }] = await Promise.all([
-        supabase.from('achievements').select('*').in('applicant_id', ids).order('sort_order'),
-        supabase.from('organizations').select('*').in('applicant_id', ids).order('sort_order'),
+        supabase.from('achievements').select('*').in('applicant_id', ids),
+        supabase.from('organizations').select('*').in('applicant_id', ids),
         supabase.from('documents').select('*').in('applicant_id', ids),
       ])
 
