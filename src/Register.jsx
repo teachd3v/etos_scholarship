@@ -2,7 +2,7 @@
 import React from 'react'
 import { ICheck, IStar, ILock, ILogo, IChevronLeft } from './Icons.jsx'
 import { AbstractShapes, Button, Field, Input } from './Primitives.jsx'
-import { signUp, signInWithGoogle } from './lib/auth.js'
+import { signUp, signInWithGoogle, isValidEmail } from './lib/auth.js'
 
 function GoogleIcon({ size = 18 }) {
   return (
@@ -60,6 +60,7 @@ export function RegisterScreen({ onSwitchToLogin, onBack, mobile }) {
 
     if (!fullName.trim())           { setError('Nama lengkap wajib diisi.'); return }
     if (!email.trim())              { setError('Email wajib diisi.'); return }
+    if (!isValidEmail(email))       { setError('Format email tidak valid (contoh: nama@email.com).'); return }
     if (password.length < 8)        { setError('Password minimal 8 karakter.'); return }
     if (password !== confirmPassword) { setError('Konfirmasi password tidak cocok.'); return }
 

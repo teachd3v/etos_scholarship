@@ -23,6 +23,15 @@ function translateError(err) {
 }
 
 /**
+ * Validasi format email secara dasar.
+ * Berguna untuk mencegah typo sebelum dikirim ke Supabase.
+ */
+export function isValidEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email.trim().toLowerCase())
+}
+
+/**
  * Register akun baru dengan email + password.
  * Setelah signUp, Supabase otomatis kirim email konfirmasi.
  * User belum bisa login sampai email di-confirm.

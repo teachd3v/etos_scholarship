@@ -2,7 +2,7 @@
 import React from 'react'
 import { ICheck, IStar, ILock, ILogo, IChevronLeft } from './Icons.jsx'
 import { AbstractShapes, Button, Field, Input } from './Primitives.jsx'
-import { signIn, signInWithGoogle, resendConfirmation, requestPasswordReset } from './lib/auth.js'
+import { signIn, signInWithGoogle, resendConfirmation, requestPasswordReset, isValidEmail } from './lib/auth.js'
 
 function GoogleIcon({ size = 18 }) {
   return (
@@ -30,6 +30,7 @@ export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile
     e?.preventDefault()
     setError(''); setInfo('')
     if (!email)    { setError('Email wajib diisi.'); return }
+    if (!isValidEmail(email)) { setError('Format email tidak valid.'); return }
     if (!password) { setError('Password wajib diisi.'); return }
 
     setLoading(true)
@@ -59,6 +60,7 @@ export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile
   const handleResend = async () => {
     setError(''); setInfo('')
     if (!email) { setError('Isi email dulu untuk kirim ulang konfirmasi.'); return }
+    if (!isValidEmail(email)) { setError('Format email tidak valid.'); return }
     setResending(true)
     try {
       await resendConfirmation(email)
@@ -73,6 +75,7 @@ export function AuthScreen({ onAuthenticated, onSwitchToRegister, onBack, mobile
   const handleForgot = async () => {
     setError(''); setInfo('')
     if (!email) { setError('Isi email dulu untuk reset password.'); return }
+    if (!isValidEmail(email)) { setError('Format email tidak valid.'); return }
     try {
       await requestPasswordReset(email)
       setInfo('Link reset password telah dikirim ke email kamu.')
