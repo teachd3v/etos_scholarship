@@ -694,7 +694,7 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
                 <IX size={20} />
               </button>
             </div>
-            {lightboxObj.url.endsWith('pdf') ? (
+            {lightboxObj.url && lightboxObj.url.toLowerCase().split('?')[0].endsWith('.pdf') ? (
               <iframe
                 src={lightboxObj.url}
                 title="Document PDF"
