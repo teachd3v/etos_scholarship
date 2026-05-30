@@ -25,20 +25,8 @@ dist-ssr
 .claude
 
 # Supabase
-supabase
+supabase/.temp/
+supabase/seed.sql
+# Keep schema.sql tracked if you want it as a reference, or ignore if using migrations
+# supabase/schema.sql 
 
-# Environment Variables
-.env
-.env.local
-.env.*.local
-
-# User specified ignore files (Private/Design/Data)
-applicants_rows.csv
-BUKU PENYESUAIAN NILAI HAD KIFAYAH TAHUN 2024.pdf
-design-canvas.jsx
-master-plan.md
-META-DATA-SELEKSI-ETOS-ID-2026.xlsx
-Portal Pendaftaran.html
-instumen_field_pendaftaran.md
-logic_bobot.md
-supabase/schema.sql
