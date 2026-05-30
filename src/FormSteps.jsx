@@ -174,6 +174,36 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
         <Input type="url" value={form.instagram || ''} error={errors.instagram}
           onChange={(e) => setField('instagram', e.target.value)} placeholder="https://instagram.com/namaanda" />
       </Field>
+
+      <ProofUpload 
+        label="Unggah bukti follow IG (Screenshot)" 
+        required 
+        error={errors.igProofFile} 
+        docType="ig_proof" 
+        fieldKey="igProofFile" 
+        currentFile={form.igProofFile} 
+        applicantId={applicantId} 
+        setField={setField} 
+      />
+
+      <Field label="Link Tiktok" error={errors.tiktok} hint="Contoh: https://tiktok.com/@namaanda">
+        <Input type="url" value={form.tiktok || ''} error={errors.tiktok}
+          onChange={(e) => setField('tiktok', e.target.value)} placeholder="https://tiktok.com/@namaanda" />
+      </Field>
+
+      {form.tiktok && form.tiktok.trim() !== '' && (
+        <ProofUpload 
+          label="Unggah bukti follow Tiktok (Screenshot)" 
+          required 
+          error={errors.tiktokProofFile} 
+          docType="tiktok_proof" 
+          fieldKey="tiktokProofFile" 
+          currentFile={form.tiktokProofFile} 
+          applicantId={applicantId} 
+          setField={setField} 
+        />
+      )}
+
       <Field label="Domisili Provinsi" required error={errors.domisiliProvinsi}>
         <Select value={form.domisiliProvinsi || ''} error={errors.domisiliProvinsi} onChange={(e) => {
           const p = provinces.find(p => p.name === e.target.value)
@@ -218,6 +248,48 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
         <KtpUpload form={form} setField={setField} errors={errors} applicantId={applicantId} />
       </div>
     </StepContainer>
+  )
+}
+
+function ProofUpload({ label, required, error, docType, fieldKey, currentFile, applicantId, setField }) {
+  const inputRef = React.useRef(null)
+  const { upload, remove, uploading, error: uploadError } = useFileUpload({
+    docType, fieldKey,
+    currentFile, applicantId, setField,
+  })
+
+  return (
+    <Field label={label} required={required} error={error || uploadError} hint="Gambar (JPG/PNG) · maks 2 MB">
+      <input type="file" ref={inputRef} accept="image/jpeg,image/png"
+        style={{ display: 'none' }} onChange={(e) => upload(e.target.files[0])} />
+      
+      {!currentFile ? (
+        <div className="upload-well" onClick={() => !uploading && inputRef.current.click()}
+          style={{ cursor: uploading ? 'wait' : 'pointer', borderColor: (error || uploadError) ? 'var(--danger-500)' : undefined }}>
+          <div className="uw-icon"><IFile size={20} /></div>
+          <div style={{ flex: 1 }}>
+            <div className="uw-title">Pilih Screenshot</div>
+            <div className="uw-sub">Unggah bukti follow (JPG/PNG)</div>
+          </div>
+          <Button variant="outline-tosca" size="sm" loading={uploading}
+            onClick={(e) => { e.stopPropagation(); inputRef.current.click() }}>
+            {uploading ? 'Mengupload…' : 'Pilih file'}
+          </Button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--ink-200)', background: 'white' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--ink-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <img src={currentFile.url} alt="Proof" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentFile.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-500)' }}>{(currentFile.size / 1024).toFixed(0)} KB · Tersimpan</div>
+          </div>
+          <Button variant="ghost" size="sm" loading={uploading} style={{ color: 'var(--danger-500)', padding: '2px 8px' }}
+            onClick={remove}>Hapus</Button>
+        </div>
+      )}
+    </Field>
   )
 }
 

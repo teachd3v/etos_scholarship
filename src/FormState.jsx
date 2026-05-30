@@ -14,7 +14,10 @@ export const BLANK_FORM = {
   studyProgram: '',
   admissionProofFile: null,
   photoFile: null, fullName: '', nickname: '', nik: '', noKK: '', birthPlace: '', birthDate: '', gender: '',
-  religion: '', email: '', phone: '', instagram: '', domisiliProvinsi: '', domisiliKota: '', domisiliKecamatan: '', address: '',
+  religion: '', email: '', phone: '', instagram: '',
+  igProofFile: null,
+  tiktok: '', tiktokProofFile: null,
+  domisiliProvinsi: '', domisiliKota: '', domisiliKecamatan: '', address: '',
   ktpFile: null,
   fatherName: '', fatherCondition: '', fatherJob: '', fatherJobOther: '', fatherIncome: '',
   motherName: '', motherCondition: '', motherJob: '', motherJobOther: '', motherIncome: '',
@@ -74,6 +77,15 @@ export function validateStep(step, form, cfg = DEFAULT_CONFIG) {
       !/^https?:\/\/.+/.test(form.instagram.trim()) ? 'Harus berupa URL yang valid (contoh: https://instagram.com/username)' :
       null
     )
+    set('igProofFile', required(form.igProofFile))
+
+    if (form.tiktok && form.tiktok.trim() !== '') {
+      if (!/^https?:\/\/.+/.test(form.tiktok.trim())) {
+        errs.tiktok = 'Harus berupa URL yang valid (contoh: https://tiktok.com/@username)'
+      }
+      if (!form.tiktokProofFile) errs.tiktokProofFile = 'Wajib unggah bukti'
+    }
+
     set('domisiliProvinsi',  required(form.domisiliProvinsi))
     set('domisiliKota',      required(form.domisiliKota))
     set('domisiliKecamatan', required(form.domisiliKecamatan))
@@ -309,6 +321,7 @@ export const SEED_FORM = {
   religion: 'Islam',
   phone: '081234567890',
   instagram: 'https://instagram.com/anindya.r',
+  tiktok: 'https://tiktok.com/@anindya.r',
   domisiliProvinsi: 'SULAWESI TENGGARA',
   domisiliKota: 'KOTA KENDARI',
   domisiliKecamatan: 'WUA-WUA',

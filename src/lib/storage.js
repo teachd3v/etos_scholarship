@@ -22,6 +22,8 @@ const FILE_LIMITS = {
   house_photo:     { maxBytes: 5_000_000, mimes: ['image/jpeg', 'image/png'] },
   kitchen_photo:   { maxBytes: 5_000_000, mimes: ['image/jpeg', 'image/png'] },
   salary_slip:     { maxBytes: 2_000_000, mimes: ['application/pdf', 'image/jpeg', 'image/png'] },
+  ig_proof:        { maxBytes: 2_000_000, mimes: ['image/jpeg', 'image/png'] },
+  tiktok_proof:    { maxBytes: 2_000_000, mimes: ['image/jpeg', 'image/png'] },
 }
 
 const MIME_TO_EXT = {

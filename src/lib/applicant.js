@@ -25,12 +25,15 @@ const DOC_TYPE_TO_FIELD = {
   ijazah:          'ijazahFile',
   admission_proof: 'admissionProofFile',
   salary_slip:     'salarySlipFile',
+  ig_proof:        'igProofFile',
+  tiktok_proof:    'tiktokProofFile',
 }
 
 // File fields yang TIDAK di-persist via tabel applicants (di-handle di Fase 4 via Storage).
 const FILE_FIELDS = new Set([
   'ijazahFile', 'admissionProofFile', 'photoFile', 'ktpFile',
   'kkFile', 'housePhotoFile', 'kitchenPhotoFile', 'salarySlipFile',
+  'igProofFile', 'tiktokProofFile',
 ])
 
 // State-only fields (tidak dipersist atau dihitung server-side)
@@ -59,10 +62,13 @@ const FIELD_MAP = {
   birthPlace:               'birth_place',
   birthDate:                'birth_date',
   gender:                   'gender',
-  email:                    'email',
-  phone:                    'phone',
-  instagram:                'instagram',
-  domisiliProvinsi:         'domisili_provinsi',
+  email:                   'email',
+  phone:                   'phone',
+  instagram:               'instagram',
+  isIgFollowed:            'is_ig_followed',
+  tiktok:                  'tiktok',
+  isTiktokFollowed:        'is_tiktok_followed',
+  domisiliProvinsi:        'domisili_provinsi',
   domisiliKota:             'domisili_kota',
   domisiliKecamatan:        'domisili_kecamatan',
   address:                  'address',

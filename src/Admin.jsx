@@ -49,6 +49,8 @@ const DOC_TYPE_TO_SUB_FIELD = {
   house_photo:     'housePhotoFile',
   kitchen_photo:   'kitchenPhotoFile',
   salary_slip:     'salarySlipFile',
+  ig_proof:        'igProofFile',
+  tiktok_proof:    'tiktokProofFile',
 }
 
 function mapApplicantRowToSubmission(row, achievements = [], organizations = [], documents = []) {
@@ -71,6 +73,8 @@ function mapApplicantRowToSubmission(row, achievements = [], organizations = [],
     housePhotoFile:     null,
     kitchenPhotoFile:   null,
     salarySlipFile:     null,
+    igProofFile:        null,
+    tiktokProofFile:    null,
     fotoProfil:         null,   // legacy alias untuk display avatar
     achievements: (achievements || []).map(a => ({
       title: a.title || '', level: a.level || '', rank: a.rank || '',
@@ -443,6 +447,13 @@ function AdminDetailPage({ submission, onBack, setConfirmAction, mobile }) {
           {kv('Email',           submission.email)}
           {kv('Telepon (WA)',    submission.phone)}
           {kv('Instagram',       submission.instagram)}
+          {kv('Bukti IG',        submission.igProofFile?.url ? (
+            <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.igProofFile.url, title: 'Bukti Follow IG' })}>Lihat Bukti IG</Button>
+          ) : <span className="muted">—</span>)}
+          {kv('Tiktok',          submission.tiktok)}
+          {kv('Bukti Tiktok',    submission.tiktokProofFile?.url ? (
+            <Button variant="outline-tosca" size="sm" onClick={() => setLightboxObj({ url: submission.tiktokProofFile.url, title: 'Bukti Follow Tiktok' })}>Lihat Bukti Tiktok</Button>
+          ) : <span className="muted">—</span>)}
           {kv('Domisili', [submission.domisiliKecamatan, submission.domisiliKota, submission.domisiliProvinsi].filter(Boolean).join(', '))}
           {kv('Kampus tujuan',   submission.province)}
           {kv('Program studi',   submission.studyProgram)}
