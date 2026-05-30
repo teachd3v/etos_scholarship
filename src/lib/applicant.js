@@ -65,9 +65,7 @@ const FIELD_MAP = {
   email:                   'email',
   phone:                   'phone',
   instagram:               'instagram',
-  isIgFollowed:            'is_ig_followed',
   tiktok:                  'tiktok',
-  isTiktokFollowed:        'is_tiktok_followed',
   domisiliProvinsi:        'domisili_provinsi',
   domisiliKota:             'domisili_kota',
   domisiliKecamatan:        'domisili_kecamatan',
@@ -337,7 +335,7 @@ export async function syncAchievements(applicantId, achievements = [], noAchieve
       title:  a.title.trim(),
       level:  a.level || 'Sekolah',
       rank:   a.rank  || 'Finalis / Juara Favorit',
-      year:   a.year ? Number(a.year) : 2024,
+      year:   a.year ? String(a.year) : '2024',
       issuer: a.issuer?.trim() || null,
     }))
   if (rows.length === 0) return
