@@ -1,5 +1,8 @@
 # Etos Scholarship Portal - Project Instructions
 
+## Architectural Map (Pustaka Project)
+**CRITICAL:** To understand the architecture and quickly find the location of specific components, functions, or database tables, always refer to the **`ARCHITECTURE.md`** file in the root directory before initiating any complex search queries.
+
 ## Database Workflow (Database-as-Code)
 We use Supabase with automated migrations managed by GitHub Actions.
 
