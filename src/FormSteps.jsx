@@ -1,6 +1,6 @@
 // FormSteps.jsx — Multi-step form (Step 1-6)
 import React from 'react'
-import { BLANK_ACHIEVEMENT, BLANK_ORG } from './FormState.jsx'
+import { BLANK_ACHIEVEMENT, BLANK_ORG, TARGET_PROVINCES } from './FormState.jsx'
 import { IFile, IAlert, IPlus, ITrash } from './Icons.jsx'
 import { Button, Field, Input, Textarea, Select, Checkbox } from './Primitives.jsx'
 import { useFormConfig } from './lib/FormConfigContext.jsx'
@@ -113,7 +113,61 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
   }, [regencyId])
 
   return (
-    <StepContainer title="Data pribadi" subtitle="Isi identitas Anda sesuai KTP/KK.">
+    <StepContainer title="Data pribadi & Akademik" subtitle="Isi identitas diri dan data akademik Anda dengan benar.">
+      
+      {/* ── Data Akademik (Onboarding Edit) ── */}
+      <div style={{ marginBottom: 32, padding: '20px', background: 'var(--tosca-50)', borderRadius: 16, border: '1px solid var(--tosca-100)' }}>
+        <SectionHeader title="Data Akademik (Skrining Awal)" />
+        
+        <div className="form-grid-2">
+          <Field label="Tahun lulus SMA / sederajat" required error={errors.graduationYear}>
+            <Select value={form.graduationYear || ''} error={errors.graduationYear} onChange={(e) => setField('graduationYear', e.target.value)}>
+              <option value="">Pilih tahun lulus…</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </Select>
+          </Field>
+          
+          <ProofUpload 
+            label="Bukti ijazah SMA / sederajat" 
+            required 
+            error={errors.ijazahFile} 
+            docType="ijazah" 
+            fieldKey="ijazahFile" 
+            currentFile={form.ijazahFile} 
+            applicantId={applicantId} 
+            setField={setField} 
+          />
+        </div>
+
+        <div className="form-grid-2" style={{ marginTop: 12 }}>
+          <Field label="Kampus tujuan" required error={errors.province}>
+            <Select value={form.province || ''} error={errors.province} onChange={(e) => setField('province', e.target.value)}>
+              <option value="">PILIH KAMPUS…</option>
+              {TARGET_PROVINCES.map((k) => <option key={k} value={k}>{k.toUpperCase()}</option>)}
+            </Select>
+          </Field>
+
+          <Field label="Program studi" required error={errors.studyProgram}>
+            <Input value={form.studyProgram || ''} error={errors.studyProgram} 
+              onChange={(e) => setField('studyProgram', e.target.value)} placeholder="Contoh: Teknik Informatika" />
+          </Field>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <ProofUpload 
+            label="Bukti Lulus SNBP/SNBT/Mandiri" 
+            required 
+            error={errors.admissionProofFile} 
+            docType="admission_proof" 
+            fieldKey="admissionProofFile" 
+            currentFile={form.admissionProofFile} 
+            applicantId={applicantId} 
+            setField={setField} 
+          />
+        </div>
+      </div>
+
       <div style={{ marginBottom: 24 }}>
         <input type="file" ref={photoInputRef} accept="image/jpeg,image/png" style={{ display: 'none' }} onChange={(e) => photoUpload.upload(e.target.files[0])} />
         <Field label="Pas Foto Profil (Wajib)" required error={errors.photoFile || photoUpload.error} hint="JPG/PNG. Tampilkan wajah jelas. Rasio 3:4 atau 4:6 (Maks 5MB)">
