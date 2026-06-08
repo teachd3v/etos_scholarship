@@ -9,15 +9,35 @@ export function useSubmissions() {
   const fetchSubmissions = React.useCallback(async () => {
     setLoading(true)
     try {
-      const { data: rows, error } = await supabase
-        .from('applicants')
-        .select('*')
-        .order('submitted_at', { ascending: false })
-      if (error) throw error
-      if (!rows || rows.length === 0) { setSubmissions([]); return }
+      let allRows = []
+      let page = 0
+      const pageSize = 1000
+      let hasMore = true
+
+      while (hasMore) {
+        const { data: rows, error } = await supabase
+          .from('applicants')
+          .select('*')
+          .range(page * pageSize, (page + 1) * pageSize - 1)
+          .order('submitted_at', { ascending: false })
+        
+        if (error) throw error
+        if (!rows || rows.length === 0) {
+          hasMore = false
+        } else {
+          allRows = [...allRows, ...rows]
+          if (rows.length < pageSize) {
+            hasMore = false
+          } else {
+            page++
+          }
+        }
+      }
+
+      if (allRows.length === 0) { setSubmissions([]); return }
 
       // Fase 2 P1: Lazy-load detail data. We don't fetch achievements, orgs, docs here anymore.
-      const mapped = rows.map(r => mapApplicantRowToSubmission(r, [], [], []))
+      const mapped = allRows.map(r => mapApplicantRowToSubmission(r, [], [], []))
       setSubmissions(mapped)
     } catch (e) {
       console.error('useSubmissions error:', e)
