@@ -121,8 +121,8 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
               : isVerification
                 ? 'Pendaftaran telah ditutup. Data Anda saat ini sedang dalam proses verifikasi oleh panitia.'
                 : isSubmitted
-                  ? 'Data Anda telah tersimpan. Selama masa pendaftaran (s/d 31 Mei), Anda masih dapat mengubah data Anda jika diperlukan.'
-                  : 'Lengkapi seluruh tahapan pendaftaran sebelum 31 Mei 2026 untuk mengikuti seleksi Beasiswa Etos ID 2026.'}
+                  ? 'Data Anda telah tersimpan. Selama masa pendaftaran (s/d 10 Juni), Anda masih dapat mengubah data Anda jika diperlukan.'
+                  : 'Lengkapi seluruh tahapan pendaftaran sebelum 10 Juni 2026 untuk mengikuti seleksi Beasiswa Etos ID 2026.'}
           </p>
 
           <div className="dash-meta" style={{ marginTop: 24 }}>
