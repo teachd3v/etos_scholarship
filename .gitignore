@@ -30,3 +30,11 @@ supabase/seed.sql
 # Keep schema.sql tracked if you want it as a reference, or ignore if using migrations
 # supabase/schema.sql 
 
+# Environment variables
+.env
+.env.*
+
+# Local data and scripts
+scripts/
+*.csv
+
