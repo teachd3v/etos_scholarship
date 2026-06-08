@@ -78,6 +78,28 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
 
   return (
     <div className="dash-wrap">
+      {!isSubmitted && isRegistration && (
+        <div style={{ 
+          background: 'linear-gradient(90deg, #ef4444 0%, #f43f5e 100%)', 
+          color: 'white', 
+          padding: '12px 20px', 
+          borderRadius: '12px', 
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.2)',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <div style={{ fontSize: '24px' }}>🚨</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '0.02em' }}>PERHATIAN: H-2 PENUTUPAN!</div>
+            <div style={{ fontSize: '12px', opacity: 0.9, fontWeight: 500 }}>
+              Pendaftaran akan ditutup pada <strong>10 Juni 2026</strong>. Segera lengkapi data dan klik tombol <strong>Submit</strong> di halaman Review!
+            </div>
+          </div>
+        </div>
+      )}
       <GlassCard className="dash-hero-card">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

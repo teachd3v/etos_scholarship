@@ -21,6 +21,26 @@ export function Landing({ onProceedToRegister, onProceedToLogin, mobile }) {
       padding: mobile ? '20px 16px' : '40px 20px',
       animation: 'fadeUp 0.5s ease' 
     }}>
+      <div style={{ 
+        background: 'linear-gradient(90deg, #ef4444 0%, #f43f5e 100%)', 
+        color: 'white', 
+        padding: '12px 20px', 
+        borderRadius: '12px', 
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.2)',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <div style={{ fontSize: '24px' }}>🚨</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '0.02em' }}>PERHATIAN: PENDAFTARAN SEGERA DITUTUP!</div>
+          <div style={{ fontSize: '12px', opacity: 0.9, fontWeight: 500 }}>
+            Pendaftaran akan ditutup dalam <strong>2 hari (10 Juni 2026)</strong>. Segera buat akun dan lengkapi pendaftaran Anda!
+          </div>
+        </div>
+      </div>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <img src="/logo-landingpage.png" alt="Logo Etos ID" style={{ height: mobile ? 50 : 60, objectFit: 'contain' }} />
