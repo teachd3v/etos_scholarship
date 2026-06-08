@@ -116,10 +116,10 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
     <StepContainer title="Data pribadi & Akademik" subtitle="Isi identitas diri dan data akademik Anda dengan benar.">
       
       {/* ── Data Akademik (Onboarding Edit) ── */}
-      <div style={{ marginBottom: 32, padding: '20px', background: 'var(--tosca-50)', borderRadius: 16, border: '1px solid var(--tosca-100)' }}>
+      <div style={{ marginBottom: 32, padding: mobile ? '16px' : '20px', background: 'var(--tosca-50)', borderRadius: 16, border: '1px solid var(--tosca-100)' }}>
         <SectionHeader title="Data Akademik (Skrining Awal)" />
         
-        <div className="form-grid-2">
+        <div className={mobile ? "" : "form-grid-2"}>
           <Field label="Tahun lulus SMA / sederajat" required error={errors.graduationYear}>
             <Select value={form.graduationYear || ''} error={errors.graduationYear} onChange={(e) => setField('graduationYear', e.target.value)}>
               <option value="">Pilih tahun lulus…</option>
@@ -140,7 +140,7 @@ function Step1DataPribadi({ form, setField, errors, mobile, applicantId }) {
           />
         </div>
 
-        <div className="form-grid-2" style={{ marginTop: 12 }}>
+        <div className={mobile ? "" : "form-grid-2"} style={{ marginTop: mobile ? 0 : 12 }}>
           <Field label="Kampus tujuan" required error={errors.province}>
             <Select value={form.province || ''} error={errors.province} onChange={(e) => setField('province', e.target.value)}>
               <option value="">PILIH KAMPUS…</option>
