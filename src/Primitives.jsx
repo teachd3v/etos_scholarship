@@ -247,13 +247,14 @@ export function DeadlineBanner({ deadlineStr, prefixText = "PERHATIAN: PENDAFTAR
       borderRadius: '12px', 
       marginBottom: '20px',
       display: 'flex',
+      flexWrap: 'wrap',
       alignItems: 'center',
       gap: '16px',
       boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.2)',
       border: '1px solid rgba(255,255,255,0.1)'
     }}>
       <div style={{ fontSize: '28px', animation: 'pulse 2s infinite' }}>🚨</div>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: '1 1 200px' }}>
         <div style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '0.02em', marginBottom: '2px' }}>{prefixText}</div>
         <div style={{ fontSize: '13px', opacity: 0.95, fontWeight: 500 }}>
           Pendaftaran ditutup {timeLeft.days > 0 ? `dalam ${timeLeft.days} hari` : 'hari ini'} (<strong>{formattedDate}</strong>). Segera lengkapi data Anda!
@@ -261,7 +262,7 @@ export function DeadlineBanner({ deadlineStr, prefixText = "PERHATIAN: PENDAFTAR
       </div>
       <div style={{
         display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '6px 12px', borderRadius: '8px',
-        border: '1px solid rgba(255,255,255,0.1)'
+        border: '1px solid rgba(255,255,255,0.1)', flex: '0 0 auto'
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '16px', fontWeight: 800 }}>{timeLeft.days}</div>
