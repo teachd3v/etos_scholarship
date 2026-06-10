@@ -2,7 +2,7 @@
 import React from 'react'
 import { completionPercent, completedSteps } from './FormState.jsx'
 import { ISave, IArrowRight, ICheck, ITrophy, IHeart, IAlert } from './Icons.jsx'
-import { GlassCard, Button, STEP_LABELS } from './Primitives.jsx'
+import { GlassCard, Button, STEP_LABELS, DeadlineBanner } from './Primitives.jsx'
 
 const MOTIVASI = [
   "Satu langkah hari ini,\nseribu peluang esok hari.",
@@ -76,29 +76,18 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
   const isVerification = currentPeriod === 'VERIFICATION'
   const isAnnouncement = currentPeriod === 'ANNOUNCEMENT'
 
+  const regEnd = cfg?.timeline?.registration_end
+  const formattedDeadline = regEnd 
+    ? new Date(regEnd).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '17 Juni 2026'
+
   return (
     <div className="dash-wrap">
-      {!isSubmitted && isRegistration && (
-        <div style={{ 
-          background: 'linear-gradient(90deg, #ef4444 0%, #f43f5e 100%)', 
-          color: 'white', 
-          padding: '12px 20px', 
-          borderRadius: '12px', 
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.2)',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}>
-          <div style={{ fontSize: '24px' }}>🚨</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '0.02em' }}>PERHATIAN: H-2 PENUTUPAN!</div>
-            <div style={{ fontSize: '12px', opacity: 0.9, fontWeight: 500 }}>
-              Pendaftaran akan ditutup pada <strong>10 Juni 2026</strong>. Segera lengkapi data dan klik tombol <strong>Submit</strong> di halaman Review!
-            </div>
-          </div>
-        </div>
+      {isRegistration && (
+        <DeadlineBanner 
+          deadlineStr={regEnd} 
+          prefixText={isSubmitted ? "INFORMASI: MASA PENDAFTARAN BERAKHIR" : "PERHATIAN: SEGERA SELESAIKAN PENDAFTARAN!"} 
+        />
       )}
       <GlassCard className="dash-hero-card">
         <div>
@@ -121,8 +110,8 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
               : isVerification
                 ? 'Pendaftaran telah ditutup. Data Anda saat ini sedang dalam proses verifikasi oleh panitia.'
                 : isSubmitted
-                  ? 'Data Anda telah tersimpan. Selama masa pendaftaran (s/d 10 Juni), Anda masih dapat mengubah data Anda jika diperlukan.'
-                  : 'Lengkapi seluruh tahapan pendaftaran sebelum 10 Juni 2026 untuk mengikuti seleksi Beasiswa Etos ID 2026.'}
+                  ? `Data Anda telah tersimpan. Selama masa pendaftaran (s/d ${formattedDeadline}), Anda masih dapat mengubah data Anda jika diperlukan.`
+                  : `Lengkapi seluruh tahapan pendaftaran sebelum ${formattedDeadline} untuk mengikuti seleksi Beasiswa Etos ID 2026.`}
           </p>
 
           <div className="dash-meta" style={{ marginTop: 24 }}>

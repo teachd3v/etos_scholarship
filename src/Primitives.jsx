@@ -205,3 +205,92 @@ function StepperRail({ current, completed, onJump }) {
     </div>
   )
 }
+
+export function DeadlineBanner({ deadlineStr, prefixText = "PERHATIAN: PENDAFTARAN SEGERA DITUTUP!" }) {
+  const [timeLeft, setTimeLeft] = React.useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [isEnded, setIsEnded] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!deadlineStr) return;
+    
+    const calculateTimeLeft = () => {
+      const difference = new Date(deadlineStr) - new Date();
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
+      } else {
+        setIsEnded(true);
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [deadlineStr]);
+
+  if (!deadlineStr) return null;
+
+  const dateObj = new Date(deadlineStr);
+  const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  if (isEnded) return null; // Don't show if ended, or maybe show a different message
+
+  return (
+    <div style={{ 
+      background: 'linear-gradient(90deg, #ef4444 0%, #f43f5e 100%)', 
+      color: 'white', 
+      padding: '12px 20px', 
+      borderRadius: '12px', 
+      marginBottom: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '16px',
+      boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.2)',
+      border: '1px solid rgba(255,255,255,0.1)'
+    }}>
+      <div style={{ fontSize: '28px', animation: 'pulse 2s infinite' }}>🚨</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '0.02em', marginBottom: '2px' }}>{prefixText}</div>
+        <div style={{ fontSize: '13px', opacity: 0.95, fontWeight: 500 }}>
+          Pendaftaran ditutup {timeLeft.days > 0 ? `dalam ${timeLeft.days} hari` : 'hari ini'} (<strong>{formattedDate}</strong>). Segera lengkapi data Anda!
+        </div>
+      </div>
+      <div style={{
+        display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '6px 12px', borderRadius: '8px',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '16px', fontWeight: 800 }}>{timeLeft.days}</div>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.8 }}>Hari</div>
+        </div>
+        <div style={{ fontSize: '16px', fontWeight: 800, opacity: 0.5 }}>:</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '16px', fontWeight: 800 }}>{timeLeft.hours.toString().padStart(2, '0')}</div>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.8 }}>Jam</div>
+        </div>
+        <div style={{ fontSize: '16px', fontWeight: 800, opacity: 0.5 }}>:</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '16px', fontWeight: 800 }}>{timeLeft.minutes.toString().padStart(2, '0')}</div>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.8 }}>Mnt</div>
+        </div>
+        <div style={{ fontSize: '16px', fontWeight: 800, opacity: 0.5 }}>:</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '16px', fontWeight: 800 }}>{timeLeft.seconds.toString().padStart(2, '0')}</div>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.8 }}>Dtk</div>
+        </div>
+      </div>
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  )
+}
+

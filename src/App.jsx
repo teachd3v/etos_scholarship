@@ -377,6 +377,7 @@ export default function App() {
         onProceedToRegister={() => setScreen('register')} 
         onProceedToLogin={() => setScreen('auth')} 
         mobile={mobile} 
+        cfg={config}
       />
     )
   } else if (screen === 'auth') {
