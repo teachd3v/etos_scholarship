@@ -107,7 +107,7 @@ DROP POLICY IF EXISTS "Users can manage own achievements" ON public.achievements
 CREATE POLICY "Users can manage own achievements" 
 ON public.achievements FOR ALL 
 TO authenticated 
-USING (auth.uid() = id_applicant OR auth.uid() = applicant_id OR EXISTS (SELECT 1 FROM public.admin_users WHERE id = auth.uid()));
+USING (auth.uid() = applicant_id OR EXISTS (SELECT 1 FROM public.admin_users WHERE id = auth.uid()));
 
 
 -- 8. Tabel organizations (Data Organisasi)
@@ -117,7 +117,7 @@ DROP POLICY IF EXISTS "Users can manage own organizations" ON public.organizatio
 CREATE POLICY "Users can manage own organizations" 
 ON public.organizations FOR ALL 
 TO authenticated 
-USING (auth.uid() = id_applicant OR auth.uid() = applicant_id OR EXISTS (SELECT 1 FROM public.admin_users WHERE id = auth.uid()));
+USING (auth.uid() = applicant_id OR EXISTS (SELECT 1 FROM public.admin_users WHERE id = auth.uid()));
 
 
 -- 9. Tabel form_config (Konfigurasi Form & Timeline)
