@@ -35,7 +35,10 @@ export function KonfigurasiPanel({ mobile }) {
       const next = JSON.parse(JSON.stringify(prev))
       const keys = path.split('.')
       let obj = next
-      for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]]
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (obj[keys[i]] === undefined || obj[keys[i]] === null) obj[keys[i]] = {}
+        obj = obj[keys[i]]
+      }
       obj[keys[keys.length - 1]] = value
       return next
     })
@@ -52,13 +55,14 @@ export function KonfigurasiPanel({ mobile }) {
         ['registration_start', 'Mulai Pendaftaran'],
         ['registration_end',   'Tutup Pendaftaran'],
         ['verification_start', 'Mulai Verifikasi (Proses Admin)'],
+        ['verification_end',   'Tutup Verifikasi (Batas Akhir Admin)'],
         ['announcement_date',  'Pengumuman Verifikasi (Hasil Terbuka)'],
       ].map(([key, label]) => (
         <div key={key}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{label}</div>
           <input type="datetime-local"
             value={(draft.timeline?.[key] || '').slice(0, 16)}
-            onChange={e => setDraftField(`timeline.${key}`, e.target.value + ':00')}
+            onChange={e => setDraftField(`timeline.${key}`, e.target.value ? e.target.value + ':00' : '')}
             style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--ink-200)', fontSize: 14, width: '100%', maxWidth: 280 }} />
         </div>
       ))}
