@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG = {
   timeline: {
     registration_start: '2026-05-01T00:00:00',
     registration_end:   '2026-05-23T00:00:00',
+    verification_start: '2026-05-24T00:00:00',
     verification_end:   '2026-05-30T00:00:00',
     announcement_date:  '2026-06-05T00:00:00',
   },

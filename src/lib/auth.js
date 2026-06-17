@@ -37,6 +37,20 @@ export function isValidEmail(email) {
  * User belum bisa login sampai email di-confirm.
  */
 export async function signUp({ email, password, fullName }) {
+  const { data: configRow } = await supabase
+    .from('form_config')
+    .select('value')
+    .eq('key', 'timeline')
+    .maybeSingle()
+
+  if (configRow?.value) {
+    const timeline = configRow.value
+    const now = new Date()
+    if (timeline.registration_end && now > new Date(timeline.registration_end)) {
+      throw new Error('Pendaftaran akun baru sudah ditutup. Silakan login dengan akun yang sudah terdaftar.')
+    }
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,

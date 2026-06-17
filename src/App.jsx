@@ -11,6 +11,7 @@ import { Dashboard } from './Dashboard.jsx'
 import { FormShell } from './FormShell.jsx'
 import { Review } from './Review.jsx'
 import { Success } from './Success.jsx'
+import { UnsubmittedBlockedScreen } from './UnsubmittedBlockedScreen.jsx'
 import { AdminPanel } from './Admin.jsx'
 import { Landing } from './Landing.jsx'
 import { useFormConfig } from './lib/FormConfigContext.jsx'
@@ -65,7 +66,7 @@ function ConnectionBanner({ status, lastError }) {
 export function getPeriod(timeline = DEFAULT_CONFIG.timeline) {
   const now = new Date()
   if (now <= new Date(timeline.registration_end)) return 'REGISTRATION'
-  if (now <= new Date(timeline.verification_end))  return 'VERIFICATION'
+  if (now < new Date(timeline.announcement_date)) return 'VERIFICATION'
   return 'ANNOUNCEMENT'
 }
 
@@ -255,6 +256,16 @@ export default function App() {
     submit: submitApplicant,
   } = useApplicant({ session, enabled: !!session })
 
+  const isUnsubmittedBlocked = React.useMemo(() => {
+    if (!session) return false
+    const isAdmin = session.user?.email === 'teach.d3v@gmail.com'
+    if (isAdmin) return false
+    if (isRegistrationClosed) {
+      return !form.is_submitted
+    }
+    return false
+  }, [session, isRegistrationClosed, form.is_submitted])
+
   React.useEffect(() => { localStorage.setItem('etos_step', String(step)) }, [step])
   React.useEffect(() => {
     localStorage.setItem('etos_theme', theme)
@@ -370,6 +381,14 @@ export default function App() {
         <div className="spinner" style={{ width: 40, height: 40, borderThickness: 3, color: 'var(--tosca-600)' }}></div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-500)', letterSpacing: '0.05em' }}>MEMUAT SISTEM...</div>
       </div>
+    )
+  } else if (isUnsubmittedBlocked) {
+    content = (
+      <UnsubmittedBlockedScreen
+        onLogout={handleLogout}
+        mobile={mobile}
+        theme={theme}
+      />
     )
   } else if (screen === 'landing') {
     content = (

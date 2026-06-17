@@ -51,6 +51,8 @@ export function KonfigurasiPanel({ mobile }) {
       {[
         ['registration_start', 'Mulai Pendaftaran'],
         ['registration_end',   'Tutup Pendaftaran'],
+        ['verification_start', 'Mulai Verifikasi (Proses Admin)'],
+        ['announcement_date',  'Pengumuman Verifikasi (Hasil Terbuka)'],
       ].map(([key, label]) => (
         <div key={key}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{label}</div>

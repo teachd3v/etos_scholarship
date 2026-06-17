@@ -64,6 +64,113 @@ function RotatingQuote() {
   )
 }
 
+function useCountdown(target) {
+  const [now, setNow] = React.useState(() => Date.now())
+  React.useEffect(() => {
+    if (!target) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [target])
+
+  const diff = Math.max(0, new Date(target).getTime() - now)
+  const days    = Math.floor(diff / 86_400_000)
+  const hours   = Math.floor((diff % 86_400_000) / 3_600_000)
+  const minutes = Math.floor((diff % 3_600_000) / 60_000)
+  const seconds = Math.floor((diff % 60_000) / 1000)
+  const isOver = diff === 0
+
+  React.useEffect(() => {
+    if (isOver && target) {
+      const timer = setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [isOver, target])
+
+  return { days, hours, minutes, seconds, isOver }
+}
+
+function CountdownWidget({ target }) {
+  const { days, hours, minutes, seconds, isOver } = useCountdown(target)
+
+  if (isOver) return null
+
+  return (
+    <div style={{
+      marginTop: 20,
+      padding: '20px 24px',
+      background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.05) 0%, rgba(13, 148, 136, 0.1) 100%)',
+      border: '1px solid rgba(20, 184, 166, 0.25)',
+      borderRadius: 16,
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+      width: '100%',
+      maxWidth: 400
+    }}>
+      <div style={{
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--tosca-700)',
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6
+      }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Waktu Pengumuman Hasil Seleksi
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <CountdownCell value={days} label="Hari" />
+        <CountdownCell value={hours} label="Jam" />
+        <CountdownCell value={minutes} label="Menit" />
+        <CountdownCell value={seconds} label="Detik" />
+      </div>
+    </div>
+  )
+}
+
+function CountdownCell({ value, label }) {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '10px 14px',
+      minWidth: 60,
+      background: 'var(--surface)',
+      border: '1px solid var(--ink-100)',
+      borderRadius: 10,
+    }}>
+      <div style={{
+        fontSize: 22,
+        fontWeight: 800,
+        color: 'var(--ink-800)',
+        fontVariantNumeric: 'tabular-nums',
+        fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+        lineHeight: 1
+      }}>
+        {String(value).padStart(2, '0')}
+      </div>
+      <div style={{
+        marginTop: 4,
+        fontSize: 9,
+        fontWeight: 700,
+        color: 'var(--ink-500)',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em'
+      }}>
+        {label}
+      </div>
+    </div>
+  )
+}
+
 export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod, cfg = {} }) {
   const pct = completionPercent(form)
   const completed = completedSteps(form)
@@ -75,6 +182,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
   const isRegistration = currentPeriod === 'REGISTRATION'
   const isVerification = currentPeriod === 'VERIFICATION'
   const isAnnouncement = currentPeriod === 'ANNOUNCEMENT'
+  const showResult = isAnnouncement && (form.status === 'approved' || form.status === 'rejected')
 
   const regEnd = cfg?.timeline?.registration_end
   const formattedDeadline = regEnd 
@@ -101,7 +209,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
             </div>
           </div>
           <p style={{ color: 'var(--ink-600)', marginTop: 8, maxWidth: 500, lineHeight: 1.5 }}>
-            {(isAnnouncement || (isSubmitted && form.status && form.status !== 'submitted'))
+            {showResult
               ? (form.status === 'approved'
                 ? 'Selamat! Anda lolos seleksi Beasiswa Etos ID 2026.'
                 : (form.status === 'rejected'
@@ -119,7 +227,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
               <span className="pill pill-amber pill-dot">Status: Belum Terkirim</span>
             ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, width: '100%' }}>
-                {(isAnnouncement || form.status === 'approved') && form.status === 'approved' && (
+                {showResult && form.status === 'approved' && (
                   <GlassCard style={{
                     flex: '1 1 100%', padding: '20px 24px',
                     background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.15) 100%)',
@@ -136,7 +244,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                   </GlassCard>
                 )}
 
-                {(isAnnouncement || form.status === 'rejected') && form.status === 'rejected' && (
+                {showResult && form.status === 'rejected' && (
                   <GlassCard style={{
                     flex: '1 1 100%', padding: '20px 24px',
                     background: 'linear-gradient(135deg, rgba(239,68,68,0.05) 0%, rgba(225,29,72,0.08) 100%)',
@@ -153,12 +261,18 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                   </GlassCard>
                 )}
 
-                {(isRegistration || isVerification || !form.status || form.status === 'submitted') && (!form.status || form.status === 'submitted') && (
-                  <div style={{ padding: '12px 18px', background: isVerification ? 'rgba(13,148,136,0.1)' : 'rgba(16, 185, 129, 0.1)', border: `1px solid ${isVerification ? 'rgba(13,148,136,0.2)' : 'rgba(16, 185, 129, 0.2)'}`, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: isVerification ? 'var(--tosca-500)' : 'var(--ok-500)', animation: isVerification ? 'none' : 'pulse 2s infinite' }}></div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: isVerification ? 'var(--tosca-700)' : 'var(--ok-700)' }}>
-                      {isVerification ? 'Status: Data Sedang Diverifikasi' : 'Status: Pendaftaran Telah Terkirim'}
+                {!showResult && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+                    <div style={{ padding: '12px 18px', background: isVerification ? 'rgba(13,148,136,0.1)' : 'rgba(16, 185, 129, 0.1)', border: `1px solid ${isVerification ? 'rgba(13,148,136,0.2)' : 'rgba(16, 185, 129, 0.2)'}`, borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: isVerification ? 'var(--tosca-500)' : 'var(--ok-500)', animation: isVerification ? 'none' : 'pulse 2s infinite' }}></div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: isVerification ? 'var(--tosca-700)' : 'var(--ok-700)' }}>
+                        {isVerification ? 'Status: Data Sedang Diverifikasi' : 'Status: Pendaftaran Telah Terkirim'}
+                      </div>
                     </div>
+                    
+                    {isVerification && cfg?.timeline?.announcement_date && (
+                      <CountdownWidget target={cfg.timeline.announcement_date} />
+                    )}
                   </div>
                 )}
               </div>
@@ -166,7 +280,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
           </div>
 
           <div style={{ marginTop: 24, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {(form.status === 'approved' || form.status === 'rejected') ? (
+            {showResult ? (
               /* Status final — form terkunci, hanya bisa lihat */
               <Button variant="outline-tosca" size="lg" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
                 {form.status === 'approved' ? '🎉 Pendaftaran Selesai' : '🔒 Pendaftaran Ditutup'}
@@ -233,16 +347,22 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
           <div className="dash-info-label">Status Verifikasi</div>
           <div className="dash-info-value" style={
             isSubmitted
-              ? (form.status === 'approved' ? { color: 'var(--tosca-700)' } : (form.status === 'rejected' ? { color: 'var(--danger-600)' } : { color: 'var(--amber-600)' }))
+              ? (showResult
+                ? (form.status === 'approved' ? { color: 'var(--tosca-700)' } : { color: 'var(--danger-600)' })
+                : { color: 'var(--amber-600)' })
               : {}
           }>
             {isSubmitted
-              ? (form.status === 'approved' ? 'Lolos' : (form.status === 'rejected' ? 'Ditolak' : 'Menunggu'))
+              ? (showResult
+                ? (form.status === 'approved' ? 'Lolos' : 'Ditolak')
+                : 'Menunggu')
               : '—'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--ink-500)' }}>
             {isSubmitted
-              ? (form.status === 'approved' ? 'Selamat! Administrasi diterima.' : (form.status === 'rejected' ? 'Tetap semangat mencoba lagi.' : 'Proses validasi oleh panitia.'))
+              ? (showResult
+                ? (form.status === 'approved' ? 'Selamat! Administrasi diterima.' : 'Tetap semangat mencoba lagi.')
+                : 'Proses validasi oleh panitia.')
               : 'Selesaikan pendaftaran.'}
           </div>
         </div>

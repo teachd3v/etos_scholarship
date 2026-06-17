@@ -1,7 +1,7 @@
 import React from 'react'
 import { ICheck } from '../Icons.jsx'
 
-export function VerifyBlock({ items, checks, notes, onToggle, onNote }) {
+export function VerifyBlock({ items, checks, notes, onToggle, onNote, disabled = false }) {
   const allDone = items.length > 0 && items.every(({ id }) => !!checks[id])
   return (
     <div style={{
@@ -10,6 +10,7 @@ export function VerifyBlock({ items, checks, notes, onToggle, onNote }) {
       borderRadius: 10,
       border: `1px solid ${allDone ? 'rgba(12, 94, 89, 0.25)' : 'rgba(12, 94, 89, 0.12)'}`,
       transition: 'background .2s, border-color .2s',
+      opacity: disabled ? 0.8 : 1,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--tosca-700)' }}>
@@ -34,14 +35,15 @@ export function VerifyBlock({ items, checks, notes, onToggle, onNote }) {
               overflow: 'hidden',
             }}>
               <label style={{
-                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 10, cursor: disabled ? 'not-allowed' : 'pointer',
                 padding: '7px 10px',
               }}>
                 <input
                   type="checkbox"
                   checked={done}
+                  disabled={disabled}
                   onChange={() => onToggle(id)}
-                  style={{ width: 16, height: 16, accentColor: 'var(--tosca-600)', cursor: 'pointer', flexShrink: 0 }}
+                  style={{ width: 16, height: 16, accentColor: 'var(--tosca-600)', cursor: disabled ? 'not-allowed' : 'pointer', flexShrink: 0 }}
                 />
                 <span style={{
                   fontSize: 13, flex: 1,
@@ -60,14 +62,16 @@ export function VerifyBlock({ items, checks, notes, onToggle, onNote }) {
                   <input
                     type="text"
                     placeholder="Tambah catatan… (opsional)"
+                    disabled={disabled}
                     value={note}
                     onChange={e => onNote(id, e.target.value)}
                     onClick={e => e.stopPropagation()}
                     style={{
                       width: '100%', fontSize: 12, padding: '5px 10px',
                       borderRadius: 6, border: '1px solid rgba(12, 94, 89, 0.25)',
-                      background: 'rgba(255,255,255,0.7)',
+                      background: disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)',
                       color: 'var(--ink-700)',
+                      cursor: disabled ? 'not-allowed' : 'text',
                       outline: 'none',
                     }}
                   />

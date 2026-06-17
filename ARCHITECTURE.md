@@ -11,7 +11,7 @@ Aplikasi ini dibangun menggunakan React (Vite). Tidak menggunakan pustaka *routi
 - **`src/Auth.jsx`**: Halaman Login/Register menggunakan integrasi Supabase Auth (Google & Email/Password).
 - **`src/Dashboard.jsx`**: Halaman utama pendaftar setelah login. Menampilkan status aplikasi, progres pengisian, dan tombol aksi (Lanjut, Ubah, dll).
 - **`src/Onboarding.jsx`**: Modal "Verifikasi Awal" untuk memilih kampus, memasukkan bukti ijazah/lulus, dll. (Datanya sekarang bisa diedit di Step 1 Form).
-- **`src/Primitives.jsx`**: Komponen UI dasar yang dapat digunakan ulang (Button, Input, Card, dll.).
+- **`src/Primitives.jsx`**: Komponen UI dasar yang dapat digunakan ulang (Button, Input, Card, dll.). Termasuk komponen **`DeadlineBanner`** yang menampilkan countdown dinamis berdasarkan konfigurasi sistem.
 
 ## 2. Form Engine (`src/`)
 Sistem formulir multi-langkah (Multi-step form) untuk pendaftaran.
@@ -66,6 +66,7 @@ Repositori ini menganut sistem "Database-as-Code".
 ## 6. Scripts & Tools (`scripts/`)
 Kumpulan skrip bantuan (non-UI) untuk kebutuhan operasional (*tools* yang tidak *di-deploy* ke server *frontend*).
 
+- **`scripts/blast_deadline_extension.js`**: Skrip otomatis untuk menarik data pendaftar (Draft/Submitted) dari Supabase dan mengirim email notifikasi perpanjangan deadline. Mendukung pagination dan offset.
 - **`scripts/blast_allpendaftar.js`**: Skrip Node.js untuk mengirimkan *email broadcast* secara massal melalui API Resend.
 - **`scripts/*.csv`**: Data *dump* (hasil *query* SQL) yang digunakan oleh skrip. (Dikecualikan di `.gitignore`).
 - **`scripts/*.html`**: *Template* email HTML untuk pengiriman *blast*.

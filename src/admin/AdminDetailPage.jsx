@@ -7,6 +7,7 @@ import { GlassCard, Button } from '../Primitives.jsx'
 import { STATUS_LABELS, DOC_TYPE_TO_SUB_FIELD, formatRp } from './adminUtils.js'
 import { StatusPill, PriorityPill, SectionCard } from './components.jsx'
 import { VerifyBlock } from './VerifyBlock.jsx'
+import { useFormConfig } from '../lib/FormConfigContext.jsx'
 
 export function AdminDetailPage({ submission: initialSubmission, onBack, setConfirmAction, mobile, statusToast }) {
   const [submission, setSubmission] = React.useState(initialSubmission);
@@ -15,6 +16,17 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
   const [verifItems, setVerifItems] = React.useState([]);
   const [verif, setVerif] = React.useState({ checks: {}, notes: {} })
   const saveTimer = React.useRef({})
+
+  const { config } = useFormConfig()
+  const timeline = config?.timeline
+
+  const canVerify = React.useMemo(() => {
+    if (!timeline) return false
+    const now = new Date()
+    const start = timeline.verification_start ? new Date(timeline.verification_start) : null
+    const end = timeline.announcement_date ? new Date(timeline.announcement_date) : null
+    return !!(start && end && now >= start && now < end)
+  }, [timeline])
 
   // Fetch items & results on mount
   React.useEffect(() => {
@@ -132,6 +144,7 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
         onToggle={toggleCheck}
         onNote={setNote}
         items={items}
+        disabled={!canVerify}
       />
     )
   }
@@ -524,24 +537,35 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
       </SectionCard>
 
       {/* Sticky Action Bar */}
-      <div style={{ height: 72 }} /> {/* Spacer untuk sticky bar */}
-      <div style={{
-        position: 'sticky', bottom: 0, left: 0, right: 0, zIndex: 100,
-        background: 'var(--glass-bg)', backdropFilter: 'blur(16px)',
-        borderTop: '1px solid var(--glass-border)',
-        padding: '12px 20px',
-        display: 'flex', gap: 8, alignItems: 'center',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
-        borderRadius: '16px 16px 0 0',
-      }}>
-        <Button variant="primary" size="sm" onClick={() => setConfirmAction({ id: submission._idx, status: 'approved' })}>
-          <ICheck size={14} /> Loloskan Administrasi
-        </Button>
-        <div style={{ flex: 1 }} />
-        <Button variant="ghost" size="sm" style={{ color: 'var(--danger-500)' }} onClick={() => setConfirmAction({ id: submission._idx, status: 'rejected' })}>
-          Tolak
-        </Button>
-      </div>
+      {canVerify ? (
+        <>
+          <div style={{ height: 72 }} /> {/* Spacer untuk sticky bar */}
+          <div style={{
+            position: 'sticky', bottom: 0, left: 0, right: 0, zIndex: 100,
+            background: 'var(--glass-bg)', backdropFilter: 'blur(16px)',
+            borderTop: '1px solid var(--glass-border)',
+            padding: '12px 20px',
+            display: 'flex', gap: 8, alignItems: 'center',
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+            borderRadius: '16px 16px 0 0',
+          }}>
+            <Button variant="primary" size="sm" onClick={() => setConfirmAction({ id: submission._idx, status: 'approved' })}>
+              <ICheck size={14} /> Loloskan Administrasi
+            </Button>
+            <div style={{ flex: 1 }} />
+            <Button variant="ghost" size="sm" style={{ color: 'var(--danger-500)' }} onClick={() => setConfirmAction({ id: submission._idx, status: 'rejected' })}>
+              Tolak
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div style={{ padding: '16px 20px', margin: '24px 0', background: 'var(--ink-50)', border: '1px solid var(--ink-200)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <IAlert size={18} style={{ color: 'var(--amber-600)', flexShrink: 0 }} />
+          <div style={{ fontSize: 13, color: 'var(--ink-600)' }}>
+            <strong>Aksi Verifikasi Ditutup:</strong> Tombol kelulusan dan penolakan hanya aktif selama periode verifikasi berlangsung (setelah pendaftaran ditutup dan sebelum pengumuman dibuka).
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightboxObj && (
