@@ -135,7 +135,7 @@ export function PendaftarPanel({ mobile }) {
         {Object.entries({ 
           'Total': submissions.length, 
           'Draft': counts['DRAFT'] || 0,
-          'Menunggu': counts['MENUNGGU'] || 0, 
+          'Submit': counts['SUBMIT'] || 0, 
           'Lolos': counts['LOLOS ADMIN'] || 0, 
           'Ditolak': counts['DITOLAK'] || 0 
         }).map(([k, v]) => (

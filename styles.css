@@ -502,6 +502,16 @@ select {
   color: var(--amber-300);
 }
 
+.pill-blue {
+  background: #EFF6FF;
+  color: #1E40AF;
+}
+
+[data-theme="dark"] .pill-blue {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93C5FD;
+}
+
 .pill-ok {
   background: var(--ok-50);
   color: #065F46;

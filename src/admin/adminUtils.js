@@ -2,21 +2,20 @@ import { DEFAULT_CONFIG } from '../lib/defaultConfig.js'
 import { dbToForm } from '../lib/applicant.js'
 
 export const STATUS_LABELS = {
-  submitted: { label: 'MENUNGGU', pill: 'pill-amber' },
+  draft: { label: 'DRAFT', pill: 'pill-amber' },
+  submitted: { label: 'SUBMIT', pill: 'pill-blue' },
   approved: { label: 'LOLOS ADMIN', pill: 'pill-ok' },
-  needs_review: { label: 'PERLU VERIFIKASI', pill: 'pill-tosca' },
   rejected: { label: 'DITOLAK', pill: 'pill-danger' },
 }
 
-export const STATUS_TABS = ['SEMUA', 'DRAFT', 'MENUNGGU', 'LOLOS ADMIN', 'PERLU VERIFIKASI', 'DITOLAK']
+export const STATUS_TABS = ['SEMUA', 'DRAFT', 'SUBMIT', 'LOLOS ADMIN', 'DITOLAK']
 export const CAMPUS_TABS = DEFAULT_CONFIG.target_universities || []
 
 export const TAB_FILTER = {
   'SEMUA': null,
   'DRAFT': 'draft',
-  'MENUNGGU': 'submitted',
+  'SUBMIT': 'submitted',
   'LOLOS ADMIN': 'approved',
-  'PERLU VERIFIKASI': 'needs_review',
   'DITOLAK': 'rejected',
 }
 
@@ -58,7 +57,7 @@ export function mapApplicantRowToSubmission(row, achievements = [], organization
     id:                 row.id,
     user_id:            row.user_id,
     is_submitted:       row.is_submitted === true,
-    status:             row.status || 'submitted',
+    status:             row.is_submitted === true ? (row.status || 'submitted') : 'draft',
     registrationNumber: row.registration_number || null,
     submittedAt:        form.submittedAt || null,
     photoFile:          null,
