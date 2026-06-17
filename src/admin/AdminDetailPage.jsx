@@ -24,7 +24,7 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
     if (!timeline) return false
     const now = new Date()
     const start = timeline.verification_start ? new Date(timeline.verification_start) : null
-    const end = timeline.announcement_date ? new Date(timeline.announcement_date) : null
+    const end = timeline.verification_end ? new Date(timeline.verification_end) : null
     return !!(start && end && now >= start && now < end)
   }, [timeline])
 
@@ -562,7 +562,7 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
         <div style={{ padding: '16px 20px', margin: '24px 0', background: 'var(--ink-50)', border: '1px solid var(--ink-200)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
           <IAlert size={18} style={{ color: 'var(--amber-600)', flexShrink: 0 }} />
           <div style={{ fontSize: 13, color: 'var(--ink-600)' }}>
-            <strong>Aksi Verifikasi Ditutup:</strong> Tombol kelulusan dan penolakan hanya aktif selama periode verifikasi berlangsung (setelah pendaftaran ditutup dan sebelum pengumuman dibuka).
+            <strong>Aksi Verifikasi Ditutup:</strong> Tombol kelulusan dan penolakan hanya aktif selama periode verifikasi berlangsung (setelah pendaftaran ditutup dan sebelum masa verifikasi berakhir).
           </div>
         </div>
       )}
