@@ -405,6 +405,8 @@ export function useApplicant({ session, enabled = true }) {
   const saveTimer = React.useRef(null)
   const arrayTimer = React.useRef(null)
   const isLoadedRef = React.useRef(false)
+  const firstScalarRender = React.useRef(true)
+  const firstArrayRender = React.useRef(true)
 
   // ── Initial load saat session siap ──
   React.useEffect(() => {
@@ -515,6 +517,11 @@ export function useApplicant({ session, enabled = true }) {
   React.useEffect(() => {
     if (!enabled || !session?.user || !isLoadedRef.current) return
 
+    if (firstScalarRender.current) {
+      firstScalarRender.current = false
+      return
+    }
+
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       save().catch(() => { /* error already in state */ })
@@ -532,6 +539,11 @@ export function useApplicant({ session, enabled = true }) {
   // ── Sync achievements & organizations (debounced 1.5s, terpisah) ──
   React.useEffect(() => {
     if (!enabled || !applicantId || !isLoadedRef.current) return
+
+    if (firstArrayRender.current) {
+      firstArrayRender.current = false
+      return
+    }
 
     if (arrayTimer.current) clearTimeout(arrayTimer.current)
     arrayTimer.current = setTimeout(async () => {

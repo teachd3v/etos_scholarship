@@ -324,11 +324,13 @@ export default function App() {
 
     setScreen(prev => {
       if (prev !== 'loading') return prev
-      if (!session) return 'landing'
+      if (!session) {
+        return isRegistrationClosed ? 'auth' : 'landing'
+      }
       const hasDraft = form.province || form.is_submitted
       return hasDraft ? 'dashboard' : 'onboarding'
     })
-  }, [sessionLoading, configLoading, session, applicantLoaded, form.province, form.is_submitted])
+  }, [sessionLoading, configLoading, session, applicantLoaded, form.province, form.is_submitted, isRegistrationClosed])
 
   // Saat session berubah dari null → ada (user baru login), trigger transisi
   React.useEffect(() => {
@@ -404,7 +406,7 @@ export default function App() {
       <AuthScreen
         onAuthenticated={() => { /* state transition handled by session listener */ }}
         onSwitchToRegister={() => setScreen('register')}
-        onBack={() => setScreen('landing')}
+        onBack={() => isRegistrationClosed ? window.location.reload() : setScreen('landing')}
         mobile={mobile}
       />
     )
@@ -415,7 +417,7 @@ export default function App() {
         <AuthScreen
           onAuthenticated={() => {}}
           onSwitchToRegister={() => {}}
-          onBack={() => setScreen('landing')}
+          onBack={() => window.location.reload()}
           mobile={mobile}
         />
       )
