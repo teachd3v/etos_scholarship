@@ -16,6 +16,70 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   const [statusToast, setStatusToast] = React.useState(null)
   const itemsPerPage = 100
 
+  // Export approved submissions to CSV/Excel format
+  const handleExportExcel = () => {
+    const approvedSubmissions = campusSubmissions.filter(s => s.status === 'approved' || s.status === 'Lolos Admin');
+    
+    if (approvedSubmissions.length === 0) {
+      alert('Tidak ada data pendaftar yang Lolos Admin untuk diexport.');
+      return;
+    }
+
+    const headers = [
+      'No. Registrasi',
+      'Nama Lengkap',
+      'NIK',
+      'No. KK',
+      'Email',
+      'No. WhatsApp',
+      'Kampus Tujuan',
+      'Program Studi',
+      'Skor Ekonomi',
+      'Skor Prestasi',
+      'Skor Organisasi',
+      'Total Skor',
+      'Prioritas Had Kifayah',
+      'Status'
+    ];
+
+    const rows = approvedSubmissions.map(s => [
+      s.registrationNumber || '',
+      s.fullName || '',
+      `="${s.nik || ''}"`, // Force text format in Excel to prevent truncation of leading zeros
+      `="${s.noKK || ''}"`,
+      s.email || '',
+      `="${s.phone || ''}"`,
+      s.province || '',
+      s.studyProgram || '',
+      s.skorEkonomi ?? 0,
+      s.skorPrestasi ?? 0,
+      s.skorOrganisasi ?? 0,
+      s.grandScore ?? 0,
+      s.hkPriority || '—',
+      'LOLOS ADMIN'
+    ]);
+
+    const csvContent = 'sep=,\n' + [headers.join(','), ...rows.map(r => r.map(val => {
+      const stringVal = String(val);
+      if (stringVal.includes(',') || stringVal.includes('"') || stringVal.includes('\n')) {
+        return `"${stringVal.replace(/"/g, '""')}"`;
+      }
+      return stringVal;
+    }).join(','))].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `Pendaftar_Lolos_Admin_${adminCampus ? adminCampus.replace(/\s+/g, '_') : 'Nasional'}_${new Date().toISOString().split('T')[0]}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Filter submissions by admin's campus if campus scope is set
   const campusSubmissions = React.useMemo(() => {
     if (!adminCampus) return submissions
@@ -150,27 +214,42 @@ export function PendaftarPanel({ mobile, adminCampus }) {
           'Submit': counts['SUBMIT'] || 0, 
           'Lolos': counts['LOLOS ADMIN'] || 0, 
           'Ditolak': counts['DITOLAK'] || 0 
-        }).map(([k, v]) => (
-          <div key={k} className="dash-info">
-            <div className="dash-info-label">{k}</div>
-            <div className="dash-info-value">{v}</div>
-          </div>
-        ))}
+        }).map(([k, v]) => {
+          const isLolosOverLimit = k === 'Lolos' && v > 35;
+          return (
+            <div key={k} className="dash-info" style={isLolosOverLimit ? { borderColor: 'var(--danger-400)', background: 'rgba(239,68,68,0.05)' } : {}}>
+              <div className="dash-info-label">
+                {k} {k === 'Lolos' && <span style={{ opacity: 0.7, fontSize: 11 }}>(Kuota: 35)</span>}
+              </div>
+              <div className="dash-info-value" style={isLolosOverLimit ? { color: 'var(--danger-600)' } : {}}>{v}</div>
+              {isLolosOverLimit && (
+                <div style={{ fontSize: 10, color: 'var(--danger-500)', fontWeight: 600, marginTop: 4 }}>
+                  Melebihi kuota 35!
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Search bar */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Search bar & Export */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
         <input
           type="text"
           placeholder="Cari berdasarkan nama, NIK, atau nomor registrasi…"
           value={searchQuery}
           onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }}
           style={{
-            width: '100%', padding: '10px 16px', fontSize: 14, borderRadius: 10,
+            flex: 1, padding: '10px 16px', fontSize: 14, borderRadius: 10,
             border: '1px solid var(--ink-200)', background: 'var(--surface)',
             color: 'var(--ink-900)', outline: 'none',
           }}
         />
+        {activeTab === 'LOLOS ADMIN' && (
+          <Button variant="primary" size="md" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            📥 Export Excel
+          </Button>
+        )}
       </div>
 
       <div style={{ marginBottom: 12 }}>

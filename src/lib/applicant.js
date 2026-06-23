@@ -413,12 +413,23 @@ export function useApplicant({ session, enabled = true }) {
     if (!enabled || !session?.user) return
     let cancelled = false
     setStatus('loading')
-    loadApplicant()
-      .then(res => {
+    Promise.all([
+      loadApplicant(),
+      supabase.from('form_config').select('value').eq('key', 'timeline').maybeSingle()
+    ])
+      .then(([res, configRes]) => {
         if (cancelled) return
+        const timeline = configRes?.data?.value || {}
+        const isPastVerificationEnd = timeline.verification_end && new Date() > new Date(timeline.verification_end)
+
         if (res) {
           setId(res.applicantId)
-          setForm(f => ({ ...BLANK_FORM, ...f, ...res.form }))
+          let finalForm = { ...BLANK_FORM, ...res.form }
+          // If verification has ended, unverified applicants are automatically rejected
+          if (isPastVerificationEnd && finalForm.is_submitted && (finalForm.status === 'submitted' || finalForm.status === 'pending' || !finalForm.status)) {
+            finalForm.status = 'rejected'
+          }
+          setForm(finalForm)
         } else {
           // New applicant — auto-fill email from session
           setForm(f => ({ ...f, email: session.user.email }))

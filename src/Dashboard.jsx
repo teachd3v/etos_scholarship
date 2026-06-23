@@ -182,7 +182,16 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
   const isRegistration = currentPeriod === 'REGISTRATION'
   const isVerification = currentPeriod === 'VERIFICATION'
   const isAnnouncement = currentPeriod === 'ANNOUNCEMENT'
-  const showResult = isAnnouncement && (form.status === 'approved' || form.status === 'rejected')
+
+  const timeline = cfg?.timeline || {}
+  const isPastVerificationEnd = timeline.verification_end && new Date() > new Date(timeline.verification_end)
+
+  // Determine display status (auto-rejected if past verification end and not explicitly approved)
+  const displayStatus = (isSubmitted && isPastVerificationEnd && (form.status === 'submitted' || form.status === 'pending' || !form.status))
+    ? 'rejected'
+    : form.status
+
+  const showResult = isAnnouncement || (isSubmitted && isPastVerificationEnd)
 
   const regEnd = cfg?.timeline?.registration_end
   const formattedDeadline = regEnd 
@@ -210,9 +219,9 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
           </div>
           <p style={{ color: 'var(--ink-600)', marginTop: 8, maxWidth: 500, lineHeight: 1.5 }}>
             {showResult
-              ? (form.status === 'approved'
+              ? (displayStatus === 'approved'
                 ? 'Selamat! Anda lolos seleksi Beasiswa Etos ID 2026.'
-                : (form.status === 'rejected'
+                : (displayStatus === 'rejected'
                   ? 'Terima kasih atas partisipasi Anda. Mohon maaf, Anda belum dapat melanjutkan ke tahap berikutnya.'
                   : 'Hasil seleksi akan segera diumumkan di halaman ini.'))
               : isVerification
@@ -227,7 +236,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
               <span className="pill pill-amber pill-dot">Status: Belum Terkirim</span>
             ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, width: '100%' }}>
-                {showResult && form.status === 'approved' && (
+                {showResult && displayStatus === 'approved' && (
                   <GlassCard style={{
                     flex: '1 1 100%', padding: '20px 24px',
                     background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.15) 100%)',
@@ -244,7 +253,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                   </GlassCard>
                 )}
 
-                {showResult && form.status === 'rejected' && (
+                {showResult && displayStatus === 'rejected' && (
                   <GlassCard style={{
                     flex: '1 1 100%', padding: '20px 24px',
                     background: 'linear-gradient(135deg, rgba(239,68,68,0.05) 0%, rgba(225,29,72,0.08) 100%)',
@@ -283,7 +292,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
             {showResult ? (
               /* Status final — form terkunci, hanya bisa lihat */
               <Button variant="outline-tosca" size="lg" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-                {form.status === 'approved' ? '🎉 Pendaftaran Selesai' : '🔒 Pendaftaran Ditutup'}
+                {displayStatus === 'approved' ? '🎉 Pendaftaran Selesai' : '🔒 Pendaftaran Ditutup'}
               </Button>
             ) : isRegistration ? (
               <>
@@ -348,20 +357,20 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
           <div className="dash-info-value" style={
             isSubmitted
               ? (showResult
-                ? (form.status === 'approved' ? { color: 'var(--tosca-700)' } : { color: 'var(--danger-600)' })
+                ? (displayStatus === 'approved' ? { color: 'var(--tosca-700)' } : { color: 'var(--danger-600)' })
                 : { color: 'var(--amber-600)' })
               : {}
           }>
             {isSubmitted
               ? (showResult
-                ? (form.status === 'approved' ? 'Lolos' : 'Ditolak')
+                ? (displayStatus === 'approved' ? 'Lolos' : 'Ditolak')
                 : 'Menunggu')
               : '—'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--ink-500)' }}>
             {isSubmitted
               ? (showResult
-                ? (form.status === 'approved' ? 'Selamat! Administrasi diterima.' : 'Tetap semangat mencoba lagi.')
+                ? (displayStatus === 'approved' ? 'Selamat! Administrasi diterima.' : 'Tetap semangat mencoba lagi.')
                 : 'Proses validasi oleh panitia.')
               : 'Selesaikan pendaftaran.'}
           </div>

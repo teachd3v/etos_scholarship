@@ -204,12 +204,6 @@ function AdminApp() {
             </div>
           </div>
           <div className="header-actions">
-            <Button variant="outline-tosca" size="sm" onClick={() => window.location.href = '/'}>
-              Ke Portal
-            </Button>
-            <button className="theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-              {theme === 'light' ? <IMoon size={18} /> : <ISun size={18} />}
-            </button>
             <button className="logout-btn" onClick={handleLogout}>
               <ILogout size={18} />
               <span>Logout Admin</span>

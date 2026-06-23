@@ -9,6 +9,16 @@ export function useSubmissions() {
   const fetchSubmissions = React.useCallback(async () => {
     setLoading(true)
     try {
+      // Fetch timeline config to determine if verification window has passed
+      const { data: configRow } = await supabase
+        .from('form_config')
+        .select('value')
+        .eq('key', 'timeline')
+        .maybeSingle()
+      
+      const timeline = configRow?.value || {}
+      const isPastVerificationEnd = timeline.verification_end && new Date() > new Date(timeline.verification_end)
+
       let allRows = []
       let page = 0
       const pageSize = 1000
@@ -37,7 +47,14 @@ export function useSubmissions() {
       if (allRows.length === 0) { setSubmissions([]); return }
 
       // Fase 2 P1: Lazy-load detail data. We don't fetch achievements, orgs, docs here anymore.
-      const mapped = allRows.map(r => mapApplicantRowToSubmission(r, [], [], []))
+      const mapped = allRows.map(r => {
+        const sub = mapApplicantRowToSubmission(r, [], [], [])
+        // If verification period has ended and applicant is not approved/rejected, they are automatically rejected
+        if (isPastVerificationEnd && sub.is_submitted && (sub.status === 'submitted' || sub.status === 'pending')) {
+          sub.status = 'rejected'
+        }
+        return sub
+      })
       setSubmissions(mapped)
     } catch (e) {
       console.error('useSubmissions error:', e)
