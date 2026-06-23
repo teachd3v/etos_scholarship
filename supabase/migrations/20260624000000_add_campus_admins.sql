@@ -177,6 +177,7 @@ WITH CHECK (
 
 DROP POLICY IF EXISTS "Users can view own verification_results" ON public.verification_results;
 CREATE POLICY "Users can view own verification_results" 
+ON public.verification_results FOR SELECT 
 TO authenticated 
 USING (
     applicant_id = auth.uid() 
