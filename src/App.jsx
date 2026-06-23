@@ -102,6 +102,7 @@ function AdminApp() {
   const [theme, setTheme] = React.useState(() => localStorage.getItem('etos_theme') || 'light')
   const [session, setSession] = React.useState(null)
   const [authStatus, setAuthStatus] = React.useState('loading') // 'loading' | 'authorized' | 'unauthorized' | 'unauthenticated'
+  const [adminCampus, setAdminCampus] = React.useState(null)
   const [mobile, setMobile] = React.useState(window.innerWidth < 768)
 
   const checkAdmin = React.useCallback(async (currSession) => {
@@ -111,7 +112,12 @@ function AdminApp() {
     }
     try {
       const profile = await getProfile()
-      setAuthStatus(profile?.role === 'admin' ? 'authorized' : 'unauthorized')
+      if (profile?.role === 'admin') {
+        setAuthStatus('authorized')
+        setAdminCampus(profile?.campus || null)
+      } else {
+        setAuthStatus('unauthorized')
+      }
     } catch {
       setAuthStatus('unauthorized')
     }
@@ -212,7 +218,7 @@ function AdminApp() {
         </div>
       </header>
       <main className="content-area">
-        <AdminPanel mobile={mobile} />
+        <AdminPanel mobile={mobile} adminCampus={adminCampus} />
       </main>
     </div>
   )

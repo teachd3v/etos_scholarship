@@ -3,13 +3,15 @@ import React from 'react'
 import { PendaftarPanel } from './admin/PendaftarPanel.jsx'
 import { KonfigurasiPanel } from './admin/KonfigurasiPanel.jsx'
 
-export function AdminPanel({ mobile }) {
+export function AdminPanel({ mobile, adminCampus }) {
   const [panelTab, setPanelTab] = React.useState('pendaftar')
 
-  const PANEL_TABS = [
-    { id: 'pendaftar',   label: 'Pendaftar' },
-    { id: 'konfigurasi', label: 'Konfigurasi Form' },
-  ]
+  const PANEL_TABS = adminCampus
+    ? [{ id: 'pendaftar',   label: 'Pendaftar' }]
+    : [
+        { id: 'pendaftar',   label: 'Pendaftar' },
+        { id: 'konfigurasi', label: 'Konfigurasi Form' },
+      ]
 
   return (
     <div className="admin-panel-wrap">
@@ -29,7 +31,7 @@ export function AdminPanel({ mobile }) {
         ))}
       </div>
 
-      {panelTab === 'pendaftar'   && <PendaftarPanel mobile={mobile} />}
+      {panelTab === 'pendaftar'   && <PendaftarPanel mobile={mobile} adminCampus={adminCampus} />}
       {panelTab === 'konfigurasi' && <KonfigurasiPanel mobile={mobile} />}
     </div>
   )

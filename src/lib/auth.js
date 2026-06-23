@@ -109,7 +109,7 @@ export async function getProfile() {
   if (!session) return null
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name, avatar_url, role, email_verified')
+    .select('id, email, full_name, avatar_url, role, campus, email_verified')
     .eq('id', session.user.id)
     .single()
   if (error) {

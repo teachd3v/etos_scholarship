@@ -6,7 +6,7 @@ import { useSubmissions } from './useSubmissions.js'
 import { StatusPill, PriorityPill, ActionConfirmModal } from './components.jsx'
 import { AdminDetailPage } from './AdminDetailPage.jsx'
 
-export function PendaftarPanel({ mobile }) {
+export function PendaftarPanel({ mobile, adminCampus }) {
   const { submissions, loading, updateStatus } = useSubmissions()
   const [activeTab, setActiveTab] = React.useState('SEMUA')
   const [detailId, setDetailId] = React.useState(null)
@@ -15,6 +15,12 @@ export function PendaftarPanel({ mobile }) {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusToast, setStatusToast] = React.useState(null)
   const itemsPerPage = 100
+
+  // Filter submissions by admin's campus if campus scope is set
+  const campusSubmissions = React.useMemo(() => {
+    if (!adminCampus) return submissions
+    return submissions.filter(s => (s.province || '').toUpperCase() === adminCampus.toUpperCase())
+  }, [submissions, adminCampus])
 
   // Reset pagination saat ganti tab
   React.useEffect(() => { setCurrentPage(1) }, [activeTab])
@@ -44,7 +50,7 @@ export function PendaftarPanel({ mobile }) {
   }
 
   const filtered = React.useMemo(() => {
-    let result = submissions.filter(s => isMatch(s, activeTab))
+    let result = campusSubmissions.filter(s => isMatch(s, activeTab))
     // Apply search filter
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toUpperCase()
@@ -55,10 +61,10 @@ export function PendaftarPanel({ mobile }) {
       )
     }
     return result
-  }, [submissions, activeTab, searchQuery])
+  }, [campusSubmissions, activeTab, searchQuery])
 
-  // Sorting logic
-  const isCampusTab = CAMPUS_TABS.includes(activeTab)
+  // Sorting logic: Campus admins or viewing specific campus tab gets priority sort
+  const isCampusTab = CAMPUS_TABS.includes(activeTab) || !!adminCampus
   const sorted = React.useMemo(() => [...filtered].sort((a, b) => {
     if (isCampusTab) {
       // Sort by Priority (1-Mampu)
@@ -76,12 +82,12 @@ export function PendaftarPanel({ mobile }) {
   const totalPages = Math.ceil(sorted.length / itemsPerPage)
 
   const counts = React.useMemo(() => [...STATUS_TABS, ...CAMPUS_TABS].reduce((acc, tab) => {
-    acc[tab] = submissions.filter(s => isMatch(s, tab)).length
+    acc[tab] = campusSubmissions.filter(s => isMatch(s, tab)).length
     return acc
-  }, {}), [submissions])
+  }, {}), [campusSubmissions])
 
   if (detailId !== null) {
-    const sub = submissions.find(s => s._idx === detailId)
+    const sub = campusSubmissions.find(s => s._idx === detailId)
     if (sub) return (
       <>
         <AdminDetailPage
@@ -125,15 +131,21 @@ export function PendaftarPanel({ mobile }) {
         <div>
           <div className="eyebrow" style={{ marginBottom: 6 }}>Panel Admin</div>
           <h1>Manajemen Pendaftaran</h1>
-          <p style={{ color: 'var(--ink-600)', marginTop: 6 }}>
-            Tinjau dan triage pendaftaran masuk secara real-time dari database Supabase.
+          <p style={{ color: 'var(--ink-600)', marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            {adminCampus ? (
+              <span className="pill-ok" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                🏢 Kampus Mitra: {adminCampus}
+              </span>
+            ) : (
+              'Tinjau dan triage pendaftaran masuk secara real-time dari database Supabase.'
+            )}
           </p>
         </div>
       </GlassCard>
 
       <div className="dash-grid">
         {Object.entries({ 
-          'Total': submissions.length, 
+          'Total': campusSubmissions.length, 
           'Draft': counts['DRAFT'] || 0,
           'Submit': counts['SUBMIT'] || 0, 
           'Lolos': counts['LOLOS ADMIN'] || 0, 
@@ -173,32 +185,36 @@ export function PendaftarPanel({ mobile }) {
           ))}
         </div>
 
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Per Kampus Tujuan</div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {CAMPUS_TABS.map((tab) => (
-            <button key={tab}
-              className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
-              style={{ borderColor: activeTab === tab ? 'var(--tosca-500)' : 'var(--ink-200)' }}
-              onClick={() => setActiveTab(tab)}>
-              {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]})</span>
-            </button>
-          ))}
-        </div>
+        {!adminCampus && (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Per Kampus Tujuan</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {CAMPUS_TABS.map((tab) => (
+                <button key={tab}
+                  className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
+                  style={{ borderColor: activeTab === tab ? 'var(--tosca-500)' : 'var(--ink-200)' }}
+                  onClick={() => setActiveTab(tab)}>
+                  {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]})</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {paginated.length === 0 ? (
         <GlassCard style={{ padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
           <h3 style={{ marginBottom: 8 }}>
-            {submissions.length === 0 ? 'Belum ada pendaftaran masuk' : 'Tidak ada data di tab ini'}
+            {campusSubmissions.length === 0 ? 'Belum ada pendaftaran masuk' : 'Tidak ada data di tab ini'}
           </h3>
           <p className="muted" style={{ fontSize: 14, maxWidth: 480, margin: '0 auto 20px' }}>
-            {submissions.length === 0
+            {campusSubmissions.length === 0
               ? 'Pendaftaran akan muncul di sini secara otomatis setelah pelamar mengirimkan formulir.'
               : 'Coba pilih tab lain atau refresh data.'}
           </p>
 
-          {submissions.length === 0 && (
+          {campusSubmissions.length === 0 && (
             <div style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 12, padding: 16, maxWidth: 520, margin: '0 auto', textAlign: 'left' }}>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ color: 'var(--amber-600)', marginTop: 2 }}><IAlert size={18} /></div>
