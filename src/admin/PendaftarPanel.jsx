@@ -215,16 +215,17 @@ export function PendaftarPanel({ mobile, adminCampus }) {
           'Lolos': counts['LOLOS ADMIN'] || 0, 
           'Ditolak': counts['DITOLAK'] || 0 
         }).map(([k, v]) => {
-          const isLolosOverLimit = k === 'Lolos' && v > 35;
+          const quota = adminCampus ? 35 : 175;
+          const isLolosOverLimit = k === 'Lolos' && v > quota;
           return (
             <div key={k} className="dash-info" style={isLolosOverLimit ? { borderColor: 'var(--danger-400)', background: 'rgba(239,68,68,0.05)' } : {}}>
               <div className="dash-info-label">
-                {k} {k === 'Lolos' && <span style={{ opacity: 0.7, fontSize: 11 }}>(Kuota: 35)</span>}
+                {k} {k === 'Lolos' && <span style={{ opacity: 0.7, fontSize: 11 }}>(Kuota: {quota})</span>}
               </div>
               <div className="dash-info-value" style={isLolosOverLimit ? { color: 'var(--danger-600)' } : {}}>{v}</div>
               {isLolosOverLimit && (
                 <div style={{ fontSize: 10, color: 'var(--danger-500)', fontWeight: 600, marginTop: 4 }}>
-                  Melebihi kuota 35!
+                  Melebihi kuota {quota}!
                 </div>
               )}
             </div>
@@ -255,13 +256,17 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Status Pendaftaran</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-          {STATUS_TABS.map((tab) => (
-            <button key={tab}
-              className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}>
-              {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]})</span>
-            </button>
-          ))}
+          {STATUS_TABS.map((tab) => {
+            const isLolosTab = tab === 'LOLOS ADMIN';
+            const tabQuota = isLolosTab ? (adminCampus ? '/35' : '/175') : '';
+            return (
+              <button key={tab}
+                className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab)}>
+                {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]}{tabQuota})</span>
+              </button>
+            );
+          })}
         </div>
 
         {!adminCampus && (
