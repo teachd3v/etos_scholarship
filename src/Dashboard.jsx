@@ -191,7 +191,10 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
     ? 'rejected'
     : form.status
 
-  const showResult = isAnnouncement || (isSubmitted && isPastVerificationEnd)
+  const urlParams = new URLSearchParams(window.location.search)
+  const bypassAnnouncement = urlParams.get('bypass_announcement') === 'true' || urlParams.get('bypass_announcement') === '1'
+
+  const showResult = isAnnouncement || (isSubmitted && isPastVerificationEnd) || bypassAnnouncement
 
   const regEnd = cfg?.timeline?.registration_end
   const formattedDeadline = regEnd 
