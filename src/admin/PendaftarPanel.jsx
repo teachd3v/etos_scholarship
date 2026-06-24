@@ -213,17 +213,20 @@ export function PendaftarPanel({ mobile, adminCampus }) {
           'Draft': counts['DRAFT'] || 0,
           'Submit': counts['SUBMIT'] || 0, 
           'Lolos': counts['LOLOS ADMIN'] || 0, 
+          'Waiting': counts['WAITING LIST'] || 0, 
           'Ditolak': counts['DITOLAK'] || 0 
         }).map(([k, v]) => {
-          const quota = adminCampus ? 35 : 175;
-          const isLolosOverLimit = k === 'Lolos' && v > quota;
+          const quota = k === 'Lolos' 
+            ? (adminCampus ? 20 : 100) 
+            : (k === 'Waiting' ? (adminCampus ? 15 : 75) : null);
+          const isOverLimit = quota !== null && v > quota;
           return (
-            <div key={k} className="dash-info" style={isLolosOverLimit ? { borderColor: 'var(--danger-400)', background: 'rgba(239,68,68,0.05)' } : {}}>
+            <div key={k} className="dash-info" style={isOverLimit ? { borderColor: 'var(--danger-400)', background: 'rgba(239,68,68,0.05)' } : {}}>
               <div className="dash-info-label">
-                {k} {k === 'Lolos' && <span style={{ opacity: 0.7, fontSize: 11 }}>(Kuota: {quota})</span>}
+                {k} {quota !== null && <span style={{ opacity: 0.7, fontSize: 11 }}>(Kuota: {quota})</span>}
               </div>
-              <div className="dash-info-value" style={isLolosOverLimit ? { color: 'var(--danger-600)' } : {}}>{v}</div>
-              {isLolosOverLimit && (
+              <div className="dash-info-value" style={isOverLimit ? { color: 'var(--danger-600)' } : {}}>{v}</div>
+              {isOverLimit && (
                 <div style={{ fontSize: 10, color: 'var(--danger-500)', fontWeight: 600, marginTop: 4 }}>
                   Melebihi kuota {quota}!
                 </div>
@@ -258,7 +261,13 @@ export function PendaftarPanel({ mobile, adminCampus }) {
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
           {STATUS_TABS.map((tab) => {
             const isLolosTab = tab === 'LOLOS ADMIN';
-            const tabQuota = isLolosTab ? (adminCampus ? '/35' : '/175') : '';
+            const isWaitingTab = tab === 'WAITING LIST';
+            let tabQuota = '';
+            if (isLolosTab) {
+              tabQuota = adminCampus ? '/20' : '/100';
+            } else if (isWaitingTab) {
+              tabQuota = adminCampus ? '/15' : '/75';
+            }
             return (
               <button key={tab}
                 className={`proto-chip ${activeTab === tab ? 'active' : ''}`}

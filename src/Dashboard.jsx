@@ -221,9 +221,11 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
             {showResult
               ? (displayStatus === 'approved'
                 ? 'Selamat! Anda lolos seleksi Beasiswa Etos ID 2026.'
-                : (displayStatus === 'rejected'
-                  ? 'Terima kasih atas partisipasi Anda. Mohon maaf, Anda belum dapat melanjutkan ke tahap berikutnya.'
-                  : 'Hasil seleksi akan segera diumumkan di halaman ini.'))
+                : (displayStatus === 'waiting'
+                  ? 'Anda masuk ke dalam Waiting List (Daftar Tunggu) Beasiswa Etos ID 2026.'
+                  : (displayStatus === 'rejected'
+                    ? 'Terima kasih atas partisipasi Anda. Mohon maaf, Anda belum dapat melanjutkan ke tahap berikutnya.'
+                    : 'Hasil seleksi akan segera diumumkan di halaman ini.')))
               : isVerification
                 ? 'Pendaftaran telah ditutup. Data Anda saat ini sedang dalam proses verifikasi oleh panitia.'
                 : isSubmitted
@@ -249,6 +251,25 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--tosca-800)', marginBottom: 2 }}>ANDA LOLOS!</div>
                       <div style={{ fontSize: 13, color: 'var(--tosca-700)' }}>Segera cek email untuk info lebih lanjut.</div>
+                    </div>
+                  </GlassCard>
+                )}
+
+                {showResult && displayStatus === 'waiting' && (
+                  <GlassCard style={{
+                    flex: '1 1 100%', padding: '20px 24px',
+                    background: 'linear-gradient(135deg, rgba(251,191,36,0.05) 0%, rgba(245,158,11,0.08) 100%)',
+                    border: '1px solid rgba(251,191,36,0.3)', borderRadius: 16,
+                    display: 'flex', alignItems: 'center', gap: 18
+                  }}>
+                    <div style={{ padding: 12, background: 'var(--amber-500)', color: 'white', borderRadius: 14 }}>
+                      <IAlert size={28} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--amber-700)', marginBottom: 2 }}>WAITING LIST</div>
+                      <div style={{ fontSize: 13, color: 'var(--amber-800)', lineHeight: 1.4 }}>
+                        Anda masuk dalam daftar tunggu. Anda akan dihubungi oleh panitia bilamana terdapat kandidat lolos utama yang mengundurkan diri atau tidak merespons undangan wawancara.
+                      </div>
                     </div>
                   </GlassCard>
                 )}
@@ -292,7 +313,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
             {showResult ? (
               /* Status final — form terkunci, hanya bisa lihat */
               <Button variant="outline-tosca" size="lg" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-                {displayStatus === 'approved' ? '🎉 Pendaftaran Selesai' : '🔒 Pendaftaran Ditutup'}
+                {displayStatus === 'approved' ? '🎉 Pendaftaran Selesai' : (displayStatus === 'waiting' ? '⏳ Waiting List' : '🔒 Pendaftaran Ditutup')}
               </Button>
             ) : isRegistration ? (
               <>
@@ -357,20 +378,20 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
           <div className="dash-info-value" style={
             isSubmitted
               ? (showResult
-                ? (displayStatus === 'approved' ? { color: 'var(--tosca-700)' } : { color: 'var(--danger-600)' })
+                ? (displayStatus === 'approved' ? { color: 'var(--tosca-700)' } : (displayStatus === 'waiting' ? { color: 'var(--amber-600)' } : { color: 'var(--danger-600)' }))
                 : { color: 'var(--amber-600)' })
               : {}
           }>
             {isSubmitted
               ? (showResult
-                ? (displayStatus === 'approved' ? 'Lolos' : 'Ditolak')
+                ? (displayStatus === 'approved' ? 'Lolos' : (displayStatus === 'waiting' ? 'Waiting List' : 'Ditolak'))
                 : 'Menunggu')
               : '—'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--ink-500)' }}>
             {isSubmitted
               ? (showResult
-                ? (displayStatus === 'approved' ? 'Selamat! Administrasi diterima.' : 'Tetap semangat mencoba lagi.')
+                ? (displayStatus === 'approved' ? 'Selamat! Administrasi diterima.' : (displayStatus === 'waiting' ? 'Anda masuk daftar tunggu wawancara.' : 'Tetap semangat mencoba lagi.'))
                 : 'Proses validasi oleh panitia.')
               : 'Selesaikan pendaftaran.'}
           </div>

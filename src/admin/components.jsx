@@ -1,7 +1,7 @@
 import React from 'react'
 import { STATUS_LABELS } from './adminUtils.js'
 import { GlassCard, Button } from '../Primitives.jsx'
-import { ICheck, IX } from '../Icons.jsx'
+import { ICheck, IX, IAlert } from '../Icons.jsx'
 
 export function StatusPill({ status }) {
   const info = STATUS_LABELS[status] || STATUS_LABELS.submitted
@@ -18,6 +18,32 @@ export function PriorityPill({ priority }) {
 }
 
 export function ActionConfirmModal({ action, onConfirm, onCancel, mobile }) {
+  const isApproved = action === 'approved'
+  const isWaiting = action === 'waiting'
+
+  let bg = 'var(--danger-50)'
+  let color = 'var(--danger-500)'
+  let icon = <IX size={28} />
+  let title = 'Tolak Pendaftar?'
+  let desc = 'Pendaftar akan dinyatakan Tidak Lolos dan statusnya akan diperbarui secara real-time.'
+  let btnVariant = 'danger'
+
+  if (isApproved) {
+    bg = 'var(--tosca-100)'
+    color = 'var(--tosca-700)'
+    icon = <ICheck size={28} />
+    title = 'Loloskan Pendaftar?'
+    desc = 'Pendaftar akan dinyatakan Lolos Administrasi dan statusnya akan diperbarui secara real-time.'
+    btnVariant = 'primary'
+  } else if (isWaiting) {
+    bg = 'rgba(251, 191, 36, 0.18)'
+    color = 'var(--amber-600)'
+    icon = <IAlert size={28} />
+    title = 'Masukkan Waiting List?'
+    desc = 'Pendaftar akan dimasukkan ke dalam daftar tunggu (Waiting List) dan statusnya akan diperbarui.'
+    btnVariant = 'primary'
+  }
+
   return (
     <div className="modal-backdrop" style={{ zIndex: 10001 }} onClick={onCancel}>
       <GlassCard
@@ -26,25 +52,23 @@ export function ActionConfirmModal({ action, onConfirm, onCancel, mobile }) {
       >
         <div style={{
           width: 56, height: 56, borderRadius: '50%',
-          background: action === 'approved' ? 'var(--tosca-100)' : 'var(--danger-50)',
-          color: action === 'approved' ? 'var(--tosca-700)' : 'var(--danger-500)',
+          background: bg,
+          color: color,
           display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
         }}>
-          {action === 'approved' ? <ICheck size={28} /> : <IX size={28} />}
+          {icon}
         </div>
 
         <h3 style={{ fontSize: 20, marginBottom: 8 }}>
-          {action === 'approved' ? 'Loloskan Pendaftar?' : 'Tolak Pendaftar?'}
+          {title}
         </h3>
         <p style={{ fontSize: 14, color: 'var(--ink-600)', marginBottom: 28, lineHeight: 1.5 }}>
-          {action === 'approved' 
-            ? 'Pendaftar akan dinyatakan Lolos Administrasi dan statusnya akan diperbarui secara real-time.' 
-            : 'Pendaftar akan dinyatakan Tidak Lolos dan statusnya akan diperbarui secara real-time.'}
+          {desc}
         </p>
 
         <div style={{ display: 'flex', gap: 12 }}>
           <Button variant="ghost" block onClick={onCancel}>Batal</Button>
-          <Button variant={action === 'approved' ? 'primary' : 'danger'} block onClick={onConfirm}>
+          <Button variant={btnVariant} block onClick={onConfirm}>
             Ya, Konfirmasi
           </Button>
         </div>

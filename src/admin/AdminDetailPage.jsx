@@ -195,12 +195,18 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
         <div style={{
           marginBottom: 12, padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
           display: 'flex', alignItems: 'center', gap: 8, animation: 'slideDown 0.3s ease-out',
-          background: statusToast.type === 'approved' ? 'var(--tosca-50)' : 'var(--danger-50)',
-          border: `1px solid ${statusToast.type === 'approved' ? 'var(--tosca-200)' : 'var(--danger-200)'}`,
-          color: statusToast.type === 'approved' ? 'var(--tosca-700)' : 'var(--danger-600)',
+          background: statusToast.type === 'approved' ? 'var(--tosca-50)' : (statusToast.type === 'waiting' ? '#FFFBEB' : 'var(--danger-50)'),
+          border: `1px solid ${statusToast.type === 'approved' ? 'var(--tosca-200)' : (statusToast.type === 'waiting' ? '#FDE68A' : 'var(--danger-200)')}`,
+          color: statusToast.type === 'approved' ? 'var(--tosca-700)' : (statusToast.type === 'waiting' ? '#B45309' : 'var(--danger-600)'),
         }}>
           <ICheck size={16} />
-          {statusToast.type === 'approved' ? 'Pendaftar berhasil diloloskan administrasi.' : 'Pendaftar berhasil ditolak.'}
+          <span>
+            {statusToast.type === 'approved' 
+              ? 'Pendaftar berhasil diloloskan administrasi.' 
+              : (statusToast.type === 'waiting' 
+                ? 'Pendaftar dimasukkan ke dalam Waiting List.' 
+                : 'Pendaftar berhasil ditolak.')}
+          </span>
         </div>
       )}
 
@@ -551,6 +557,9 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
           }}>
             <Button variant="primary" size="sm" onClick={() => setConfirmAction({ id: submission._idx, status: 'approved' })}>
               <ICheck size={14} /> Loloskan Administrasi
+            </Button>
+            <Button variant="outline-tosca" size="sm" onClick={() => setConfirmAction({ id: submission._idx, status: 'waiting' })}>
+              Waiting List
             </Button>
             <div style={{ flex: 1 }} />
             <Button variant="ghost" size="sm" style={{ color: 'var(--danger-500)' }} onClick={() => setConfirmAction({ id: submission._idx, status: 'rejected' })}>

@@ -5,10 +5,11 @@ export const STATUS_LABELS = {
   draft: { label: 'DRAFT', pill: 'pill-amber' },
   submitted: { label: 'SUBMIT', pill: 'pill-blue' },
   approved: { label: 'LOLOS ADMIN', pill: 'pill-ok' },
+  waiting: { label: 'WAITING LIST', pill: 'pill-tosca' },
   rejected: { label: 'DITOLAK', pill: 'pill-danger' },
 }
 
-export const STATUS_TABS = ['SEMUA', 'DRAFT', 'SUBMIT', 'LOLOS ADMIN', 'DITOLAK']
+export const STATUS_TABS = ['SEMUA', 'DRAFT', 'SUBMIT', 'LOLOS ADMIN', 'WAITING LIST', 'DITOLAK']
 export const CAMPUS_TABS = DEFAULT_CONFIG.target_universities || []
 
 export const TAB_FILTER = {
@@ -16,6 +17,7 @@ export const TAB_FILTER = {
   'DRAFT': 'draft',
   'SUBMIT': 'submitted',
   'LOLOS ADMIN': 'approved',
+  'WAITING LIST': 'waiting',
   'DITOLAK': 'rejected',
 }
 
