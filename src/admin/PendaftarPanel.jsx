@@ -131,29 +131,30 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     return result
   }, [campusSubmissions, activeTab, searchQuery])
 
-  // Sorting logic: Campus admins or viewing specific campus tab gets priority sort
-  const isCampusTab = CAMPUS_TABS.includes(activeTab) || !!adminCampus
+  // Sorting logic: Always sort by Priority -> Grand Score -> Skor Prestasi -> Skor Organisasi -> submittedAt DESC to maintain perfect consistency across all admin screens and tabs.
   const sorted = React.useMemo(() => [...filtered].sort((a, b) => {
-    if (isCampusTab) {
-      // 1. Sort by Priority (1-Mampu)
-      const pA = PRIORITY_ORDER[a.hkPriority] ?? 4
-      const pB = PRIORITY_ORDER[b.hkPriority] ?? 4
-      if (pA !== pB) return pA - pB
+    // 1. Sort by Priority (1-Mampu)
+    const pA = PRIORITY_ORDER[a.hkPriority] ?? 4
+    const pB = PRIORITY_ORDER[b.hkPriority] ?? 4
+    if (pA !== pB) return pA - pB
 
-      // 2. Sort by Grand Score (Highest first)
-      const diffGrand = (b.grandScore || 0) - (a.grandScore || 0)
-      if (diffGrand !== 0) return diffGrand
+    // 2. Sort by Grand Score (Highest first)
+    const diffGrand = (b.grandScore || 0) - (a.grandScore || 0)
+    if (diffGrand !== 0) return diffGrand
 
-      // 3. Sort by Skor Prestasi (Highest first)
-      const diffPrestasi = (b.skorPrestasi || 0) - (a.skorPrestasi || 0)
-      if (diffPrestasi !== 0) return diffPrestasi
+    // 3. Sort by Skor Prestasi (Highest first)
+    const diffPrestasi = (b.skorPrestasi || 0) - (a.skorPrestasi || 0)
+    if (diffPrestasi !== 0) return diffPrestasi
 
-      // 4. Sort by Skor Organisasi (Highest first)
-      return (b.skorOrganisasi || 0) - (a.skorOrganisasi || 0)
-    }
-    // Default: Newest first (already handled by useSubmissions fetch order)
-    return 0
-  }), [filtered, isCampusTab])
+    // 4. Sort by Skor Organisasi (Highest first)
+    const diffOrganisasi = (b.skorOrganisasi || 0) - (a.skorOrganisasi || 0)
+    if (diffOrganisasi !== 0) return diffOrganisasi
+
+    // 5. Stable fallback: newest submitted first
+    const timeA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0
+    const timeB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0
+    return timeB - timeA
+  }), [filtered])
 
   const paginated = sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
   const totalPages = Math.ceil(sorted.length / itemsPerPage)
