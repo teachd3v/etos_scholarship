@@ -95,11 +95,20 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   React.useEffect(() => { setCurrentPage(1) }, [activeTab])
 
   const isMatch = (s, tab) => {
-    if (tab === 'SEMUA') return true
+    if (!tab) return false
+    const cleanTab = tab.trim().toUpperCase()
+
+    if (cleanTab === 'SEMUA') {
+      if (adminCampus) {
+        return s.is_submitted === true
+      }
+      return true
+    }
     
     // Cek apakah tab adalah kampus (hanya tampilkan yang berstatus 'submitted' / belum diproses)
-    if (CAMPUS_TABS.includes(tab)) {
-      return (s.province || '').toUpperCase() === tab.toUpperCase() && 
+    const isCampus = CAMPUS_TABS.some(c => c.trim().toUpperCase() === cleanTab)
+    if (isCampus) {
+      return (s.province || '').trim().toUpperCase() === cleanTab && 
              s.is_submitted === true && 
              (s.status || 'submitted').toLowerCase() === 'submitted'
     }
