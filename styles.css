@@ -305,6 +305,25 @@ select {
   background: rgba(251, 191, 36, 0.08);
 }
 
+.btn-outline-blue {
+  background: transparent;
+  color: #1D4ED8;
+  border-color: #3B82F6;
+}
+
+[data-theme="dark"] .btn-outline-blue {
+  color: #93C5FD;
+  border-color: #60A5FA;
+}
+
+.btn-outline-blue:hover:not(:disabled) {
+  background: #EFF6FF;
+}
+
+[data-theme="dark"] .btn-outline-blue:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.08);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--ink-700);

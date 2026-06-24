@@ -11,6 +11,9 @@ import { useFormConfig } from '../lib/FormConfigContext.jsx'
 
 export function AdminDetailPage({ submission: initialSubmission, onBack, setConfirmAction, mobile, statusToast }) {
   const [submission, setSubmission] = React.useState(initialSubmission);
+  React.useEffect(() => {
+    setSubmission(prev => ({ ...prev, status: initialSubmission.status }));
+  }, [initialSubmission.status]);
   const [loadingDetail, setLoadingDetail] = React.useState(true);
   const [lightboxObj, setLightboxObj] = React.useState(null);
   const [verifItems, setVerifItems] = React.useState([]);
@@ -195,9 +198,9 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
         <div style={{
           marginBottom: 12, padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
           display: 'flex', alignItems: 'center', gap: 8, animation: 'slideDown 0.3s ease-out',
-          background: statusToast.type === 'approved' ? 'var(--tosca-50)' : (statusToast.type === 'waiting' ? '#FFFBEB' : 'var(--danger-50)'),
-          border: `1px solid ${statusToast.type === 'approved' ? 'var(--tosca-200)' : (statusToast.type === 'waiting' ? '#FDE68A' : 'var(--danger-200)')}`,
-          color: statusToast.type === 'approved' ? 'var(--tosca-700)' : (statusToast.type === 'waiting' ? '#B45309' : 'var(--danger-600)'),
+          background: statusToast.type === 'approved' ? 'var(--tosca-50)' : (statusToast.type === 'waiting' ? '#FFFBEB' : (statusToast.type === 'submitted' ? '#EFF6FF' : 'var(--danger-50)')),
+          border: `1px solid ${statusToast.type === 'approved' ? 'var(--tosca-200)' : (statusToast.type === 'waiting' ? '#FDE68A' : (statusToast.type === 'submitted' ? '#BFDBFE' : 'var(--danger-200)'))}`,
+          color: statusToast.type === 'approved' ? 'var(--tosca-700)' : (statusToast.type === 'waiting' ? '#B45309' : (statusToast.type === 'submitted' ? '#1E40AF' : 'var(--danger-600)')),
         }}>
           <ICheck size={16} />
           <span>
@@ -205,7 +208,9 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
               ? 'Pendaftar berhasil diloloskan administrasi.' 
               : (statusToast.type === 'waiting' 
                 ? 'Pendaftar dimasukkan ke dalam Waiting List.' 
-                : 'Pendaftar berhasil ditolak.')}
+                : (statusToast.type === 'submitted'
+                  ? 'Status pendaftar berhasil dikembalikan ke Submit (Belum Diproses).'
+                  : 'Pendaftar berhasil ditolak.'))}
           </span>
         </div>
       )}
@@ -561,6 +566,11 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
             <Button variant="outline-tosca" size="sm" onClick={() => setConfirmAction({ id: submission._idx, status: 'waiting' })}>
               Waiting List
             </Button>
+            {submission.is_submitted === true && submission.status !== 'submitted' && (
+              <Button variant="outline-blue" size="sm" onClick={() => setConfirmAction({ id: submission._idx, status: 'submitted' })}>
+                Batalkan Status / Reset
+              </Button>
+            )}
             <div style={{ flex: 1 }} />
             <Button variant="ghost" size="sm" style={{ color: 'var(--danger-500)' }} onClick={() => setConfirmAction({ id: submission._idx, status: 'rejected' })}>
               Tolak

@@ -20,6 +20,7 @@ export function PriorityPill({ priority }) {
 export function ActionConfirmModal({ action, onConfirm, onCancel, mobile }) {
   const isApproved = action === 'approved'
   const isWaiting = action === 'waiting'
+  const isSubmitted = action === 'submitted'
 
   let bg = 'var(--danger-50)'
   let color = 'var(--danger-500)'
@@ -41,6 +42,13 @@ export function ActionConfirmModal({ action, onConfirm, onCancel, mobile }) {
     icon = <IAlert size={28} />
     title = 'Masukkan Waiting List?'
     desc = 'Pendaftar akan dimasukkan ke dalam daftar tunggu (Waiting List) dan statusnya akan diperbarui.'
+    btnVariant = 'primary'
+  } else if (isSubmitted) {
+    bg = 'rgba(59, 130, 246, 0.15)'
+    color = '#1D4ED8'
+    icon = <IAlert size={28} />
+    title = 'Batalkan Status / Reset?'
+    desc = 'Status pendaftar akan dikembalikan ke awal (SUBMIT / Belum Diproses).'
     btnVariant = 'primary'
   }
 
