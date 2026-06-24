@@ -97,9 +97,11 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   const isMatch = (s, tab) => {
     if (tab === 'SEMUA') return true
     
-    // Cek apakah tab adalah kampus
+    // Cek apakah tab adalah kampus (hanya tampilkan yang berstatus 'submitted' / belum diproses)
     if (CAMPUS_TABS.includes(tab)) {
-      return (s.province || '').toUpperCase() === tab.toUpperCase() && s.is_submitted === true
+      return (s.province || '').toUpperCase() === tab.toUpperCase() && 
+             s.is_submitted === true && 
+             (s.status || 'submitted').toLowerCase() === 'submitted'
     }
 
     const targetKey = TAB_FILTER[tab]
