@@ -9,6 +9,7 @@ import { AdminDetailPage } from './AdminDetailPage.jsx'
 export function PendaftarPanel({ mobile, adminCampus }) {
   const { submissions, loading, updateStatus } = useSubmissions()
   const [activeTab, setActiveTab] = React.useState('SEMUA')
+  const isCampusTab = CAMPUS_TABS.includes(activeTab) || !!adminCampus
   const [detailId, setDetailId] = React.useState(null)
   const [confirmAction, setConfirmAction] = React.useState(null)
   const [currentPage, setCurrentPage] = React.useState(1)
