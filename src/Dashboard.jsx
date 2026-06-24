@@ -253,7 +253,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                     </div>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--tosca-800)', marginBottom: 2 }}>ANDA LOLOS!</div>
-                      <div style={{ fontSize: 13, color: 'var(--tosca-700)' }}>Segera cek email untuk info lebih lanjut.</div>
+                      <div style={{ fontSize: 13, color: 'var(--tosca-700)', lineHeight: 1.4 }}>Anda akan dihubungi oleh panitia seleksi untuk tahap berikutnya. Pastikan kontak yang terdaftar sesuai.</div>
                     </div>
                   </GlassCard>
                 )}
@@ -271,7 +271,7 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--amber-700)', marginBottom: 2 }}>WAITING LIST</div>
                       <div style={{ fontSize: 13, color: 'var(--amber-800)', lineHeight: 1.4 }}>
-                        Anda masuk dalam daftar tunggu. Anda akan dihubungi oleh panitia bilamana terdapat kandidat lolos utama yang mengundurkan diri atau tidak merespons undangan wawancara.
+                        Anda masuk daftar tunggu. Anda akan dihubungi oleh panitia bilamana terdapat kandidat lolos utama yang gugur sebelum wawancara
                       </div>
                     </div>
                   </GlassCard>
