@@ -83,7 +83,11 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   // Filter submissions by admin's campus if campus scope is set
   const campusSubmissions = React.useMemo(() => {
     if (!adminCampus) return submissions
-    return submissions.filter(s => (s.province || '').toUpperCase() === adminCampus.toUpperCase())
+    // For campus admins, filter out draft submissions (only show submitted)
+    return submissions.filter(s => 
+      (s.province || '').toUpperCase() === adminCampus.toUpperCase() && 
+      s.is_submitted === true
+    )
   }, [submissions, adminCampus])
 
   // Reset pagination saat ganti tab
@@ -131,12 +135,21 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   const isCampusTab = CAMPUS_TABS.includes(activeTab) || !!adminCampus
   const sorted = React.useMemo(() => [...filtered].sort((a, b) => {
     if (isCampusTab) {
-      // Sort by Priority (1-Mampu)
+      // 1. Sort by Priority (1-Mampu)
       const pA = PRIORITY_ORDER[a.hkPriority] ?? 4
       const pB = PRIORITY_ORDER[b.hkPriority] ?? 4
       if (pA !== pB) return pA - pB
-      // Then by Score (Highest first)
-      return (b.grandScore || 0) - (a.grandScore || 0)
+
+      // 2. Sort by Grand Score (Highest first)
+      const diffGrand = (b.grandScore || 0) - (a.grandScore || 0)
+      if (diffGrand !== 0) return diffGrand
+
+      // 3. Sort by Skor Prestasi (Highest first)
+      const diffPrestasi = (b.skorPrestasi || 0) - (a.skorPrestasi || 0)
+      if (diffPrestasi !== 0) return diffPrestasi
+
+      // 4. Sort by Skor Organisasi (Highest first)
+      return (b.skorOrganisasi || 0) - (a.skorOrganisasi || 0)
     }
     // Default: Newest first (already handled by useSubmissions fetch order)
     return 0
@@ -259,7 +272,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Status Pendaftaran</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-          {STATUS_TABS.map((tab) => {
+          {STATUS_TABS.filter(tab => !adminCampus || tab !== 'DRAFT').map((tab) => {
             const isLolosTab = tab === 'LOLOS ADMIN';
             const isWaitingTab = tab === 'WAITING LIST';
             let tabQuota = '';
