@@ -236,7 +236,6 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       <div className="dash-grid">
         {Object.entries({ 
           'Total': campusSubmissions.length, 
-          'Draft': counts['DRAFT'] || 0,
           'Submit': counts['SUBMIT'] || 0, 
           'Lolos': counts['LOLOS ADMIN'] || 0, 
           'Waiting': counts['WAITING LIST'] || 0, 
@@ -285,7 +284,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Status Pendaftaran</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-          {STATUS_TABS.filter(tab => !adminCampus || tab !== 'DRAFT').map((tab) => {
+          {STATUS_TABS.map((tab) => {
             const isLolosTab = tab === 'LOLOS ADMIN';
             const isWaitingTab = tab === 'WAITING LIST';
             let tabQuota = '';

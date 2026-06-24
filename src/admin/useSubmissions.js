@@ -44,10 +44,13 @@ export function useSubmissions() {
         }
       }
 
-      if (allRows.length === 0) { setSubmissions([]); return }
+      // Filter out draft applicants (only keep submitted ones: is_submitted === true)
+      const submittedRows = allRows.filter(r => r.is_submitted === true)
+
+      if (submittedRows.length === 0) { setSubmissions([]); return }
 
       // Fase 2 P1: Lazy-load detail data. We don't fetch achievements, orgs, docs here anymore.
-      const mapped = allRows.map(r => {
+      const mapped = submittedRows.map(r => {
         const sub = mapApplicantRowToSubmission(r, [], [], [])
         // If verification period has ended and applicant is not approved/rejected, they are automatically rejected
         if (isPastVerificationEnd && sub.is_submitted && (sub.status === 'submitted' || sub.status === 'pending')) {

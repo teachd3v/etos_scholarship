@@ -9,12 +9,11 @@ export const STATUS_LABELS = {
   rejected: { label: 'DITOLAK', pill: 'pill-danger' },
 }
 
-export const STATUS_TABS = ['SEMUA', 'DRAFT', 'SUBMIT', 'LOLOS ADMIN', 'WAITING LIST', 'DITOLAK']
+export const STATUS_TABS = ['SEMUA', 'SUBMIT', 'LOLOS ADMIN', 'WAITING LIST', 'DITOLAK']
 export const CAMPUS_TABS = DEFAULT_CONFIG.target_universities || []
 
 export const TAB_FILTER = {
   'SEMUA': null,
-  'DRAFT': 'draft',
   'SUBMIT': 'submitted',
   'LOLOS ADMIN': 'approved',
   'WAITING LIST': 'waiting',
