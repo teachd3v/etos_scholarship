@@ -61,6 +61,8 @@ export function mapApplicantRowToSubmission(row, achievements = [], organization
     status:             row.is_submitted === true ? (row.status || 'submitted') : 'draft',
     registrationNumber: row.registration_number || null,
     submittedAt:        form.submittedAt || null,
+    submittedAtRaw:     row.submitted_at || null,
+    updatedAtRaw:       row.updated_at || null,
     photoFile:          null,
     kkFile:             null,
     ktpFile:            null,

@@ -143,8 +143,15 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     return result
   }, [campusSubmissions, activeTab, searchQuery])
 
-  // Sorting logic: Always sort by Priority -> Grand Score -> Skor Prestasi -> Skor Organisasi -> submittedAt DESC to maintain perfect consistency across all admin screens and tabs.
+  // Sorting logic: For 'LOLOS ADMIN', sort purely by submission time (newest first).
+  // For other tabs, sort by Priority -> Grand Score -> Skor Prestasi -> Skor Organisasi -> submittedAt DESC.
   const sorted = React.useMemo(() => [...filtered].sort((a, b) => {
+    if (activeTab === 'LOLOS ADMIN') {
+      const timeA = a.submittedAtRaw ? new Date(a.submittedAtRaw).getTime() : 0
+      const timeB = b.submittedAtRaw ? new Date(b.submittedAtRaw).getTime() : 0
+      return timeB - timeA
+    }
+
     // 1. Sort by Priority (1-Mampu)
     const pA = PRIORITY_ORDER[a.hkPriority] ?? 4
     const pB = PRIORITY_ORDER[b.hkPriority] ?? 4
@@ -163,10 +170,10 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     if (diffOrganisasi !== 0) return diffOrganisasi
 
     // 5. Stable fallback: newest submitted first
-    const timeA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0
-    const timeB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0
+    const timeA = a.submittedAtRaw ? new Date(a.submittedAtRaw).getTime() : 0
+    const timeB = b.submittedAtRaw ? new Date(b.submittedAtRaw).getTime() : 0
     return timeB - timeA
-  }), [filtered])
+  }), [filtered, activeTab])
 
   const paginated = sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
   const totalPages = Math.ceil(sorted.length / itemsPerPage)
@@ -352,39 +359,61 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {paginated.map((s) => (
-              <GlassCard key={s._idx} style={{ padding: mobile ? '12px 14px' : '14px 20px' }}>
-                <div style={{ display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'stretch' : 'center', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>{s.fullName || '—'}</div>
-                      <PriorityPill priority={s.hkPriority} />
-                      {(s.skorPrestasi > 0 || isCampusTab) && (
-                        <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--tosca-600)', color: '#fff' }}>
-                          P: {s.skorPrestasi || 0}
-                        </span>
-                      )}
-                      {(s.skorOrganisasi > 0 || isCampusTab) && (
-                        <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--amber-600)', color: '#fff' }}>
-                          O: {s.skorOrganisasi || 0}
-                        </span>
-                      )}
+            {paginated.map((s, idx) => {
+              const serialNumber = (currentPage - 1) * itemsPerPage + idx + 1
+              return (
+                <GlassCard key={s._idx} style={{ padding: mobile ? '12px 14px' : '14px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: mobile ? 28 : 36,
+                      height: mobile ? 28 : 36,
+                      borderRadius: 8,
+                      background: 'var(--ink-100)',
+                      color: 'var(--ink-600)',
+                      fontSize: mobile ? 11 : 13,
+                      fontWeight: 700,
+                      border: '1px solid var(--ink-200)',
+                      flexShrink: 0,
+                      fontFamily: 'var(--font-mono, monospace)'
+                    }}>
+                      {serialNumber}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>
-                      <span className="mono">{s.registrationNumber || 'ETOS-26-DEMO'}</span>
-                      {' · '}{s.province || '—'}
-                      {s.submittedAt && !mobile && <> · {s.submittedAt}</>}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: mobile ? 'column' : 'row', alignItems: mobile ? 'stretch' : 'center', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ fontWeight: 700, fontSize: 15 }}>{s.fullName || '—'}</div>
+                          <PriorityPill priority={s.hkPriority} />
+                          {(s.skorPrestasi > 0 || isCampusTab) && (
+                            <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--tosca-600)', color: '#fff' }}>
+                              P: {s.skorPrestasi || 0}
+                            </span>
+                          )}
+                          {(s.skorOrganisasi > 0 || isCampusTab) && (
+                            <span className="pill pill-ink" style={{ fontSize: 9, background: 'var(--amber-600)', color: '#fff' }}>
+                              O: {s.skorOrganisasi || 0}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>
+                          <span className="mono">{s.registrationNumber || 'ETOS-26-DEMO'}</span>
+                          {' · '}{s.province || '—'}
+                          {s.submittedAt && !mobile && <> · {s.submittedAt}</>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTop: mobile ? '1px solid var(--ink-100)' : 'none', paddingTop: mobile ? 10 : 0 }}>
+                        <StatusPill status={s.status || 'submitted'} />
+                        <Button variant="outline-tosca" size="sm" onClick={() => setDetailId(s._idx)}>
+                          Detail
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTop: mobile ? '1px solid var(--ink-100)' : 'none', paddingTop: mobile ? 10 : 0 }}>
-                    <StatusPill status={s.status || 'submitted'} />
-                    <Button variant="outline-tosca" size="sm" onClick={() => setDetailId(s._idx)}>
-                      Detail
-                    </Button>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
+                </GlassCard>
+              )
+            })}
           </div>
 
           {totalPages > 1 && (
