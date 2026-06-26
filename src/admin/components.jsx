@@ -93,3 +93,36 @@ export function SectionCard({ title, children, padding = 20 }) {
     </GlassCard>
   );
 }
+
+export function QuotaWarningModal({ title, message, onClose }) {
+  return (
+    <div className="modal-backdrop" style={{ zIndex: 10002 }} onClick={onClose}>
+      <GlassCard
+        onClick={e => e.stopPropagation()}
+        style={{ width: 360, padding: 32, textAlign: 'center' }}
+      >
+        <div style={{
+          width: 56, height: 56, borderRadius: '50%',
+          background: 'rgba(239, 68, 68, 0.1)',
+          color: 'var(--danger-500)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+        }}>
+          <IAlert size={28} />
+        </div>
+
+        <h3 style={{ fontSize: 18, marginBottom: 8, color: 'var(--danger-600)' }}>
+          {title}
+        </h3>
+        <p style={{ fontSize: 13, color: 'var(--ink-600)', marginBottom: 28, lineHeight: 1.5 }}>
+          {message}
+        </p>
+
+        <div>
+          <Button variant="primary" block onClick={onClose}>
+            Mengerti
+          </Button>
+        </div>
+      </GlassCard>
+    </div>
+  )
+}

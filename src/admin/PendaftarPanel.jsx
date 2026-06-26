@@ -3,7 +3,7 @@ import { IAlert } from '../Icons.jsx'
 import { GlassCard, Button } from '../Primitives.jsx'
 import { STATUS_LABELS, STATUS_TABS, CAMPUS_TABS, TAB_FILTER, PRIORITY_ORDER } from './adminUtils.js'
 import { useSubmissions } from './useSubmissions.js'
-import { StatusPill, PriorityPill, ActionConfirmModal } from './components.jsx'
+import { StatusPill, PriorityPill, ActionConfirmModal, QuotaWarningModal } from './components.jsx'
 import { AdminDetailPage } from './AdminDetailPage.jsx'
 
 export function PendaftarPanel({ mobile, adminCampus }) {
@@ -12,6 +12,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   const isCampusTab = CAMPUS_TABS.includes(activeTab) || !!adminCampus
   const [detailId, setDetailId] = React.useState(null)
   const [confirmAction, setConfirmAction] = React.useState(null)
+  const [quotaWarning, setQuotaWarning] = React.useState(null)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusToast, setStatusToast] = React.useState(null)
@@ -210,7 +211,10 @@ export function PendaftarPanel({ mobile, adminCampus }) {
                   ).length
                   const isAlreadyApproved = applicant.status === 'approved' || applicant.status === 'Lolos Admin'
                   if (!isAlreadyApproved && approvedCount >= 20) {
-                    alert(`🚨 Kuota "Lolos Admin" untuk ${applicant.province} sudah terpenuhi (Maksimal 20 orang). Anda tidak dapat meloloskan pendaftar lagi untuk kampus ini.`)
+                    setQuotaWarning({
+                      title: 'Kuota Lolos Terpenuhi',
+                      message: `Kuota "Lolos Admin" untuk ${applicant.province} sudah terpenuhi (Maksimal 20 orang). Anda tidak dapat meloloskan pendaftar lagi untuk kampus ini.`
+                    })
                     setConfirmAction(null)
                     return
                   }
@@ -222,7 +226,10 @@ export function PendaftarPanel({ mobile, adminCampus }) {
                   ).length
                   const isAlreadyWaiting = applicant.status === 'waiting' || applicant.status === 'Waiting List'
                   if (!isAlreadyWaiting && waitingCount >= 15) {
-                    alert(`🚨 Kuota "Waiting List" untuk ${applicant.province} sudah terpenuhi (Maksimal 15 orang). Anda tidak dapat memasukkan pendaftar lagi ke waiting list untuk kampus ini.`)
+                    setQuotaWarning({
+                      title: 'Kuota Waiting List Terpenuhi',
+                      message: `Kuota "Waiting List" untuk ${applicant.province} sudah terpenuhi (Maksimal 15 orang). Anda tidak dapat memasukkan pendaftar lagi ke waiting list untuk kampus ini.`
+                    })
                     setConfirmAction(null)
                     return
                   }
@@ -236,6 +243,13 @@ export function PendaftarPanel({ mobile, adminCampus }) {
               setTimeout(() => setStatusToast(null), 4000)
             }}
             mobile={mobile}
+          />
+        )}
+        {quotaWarning && (
+          <QuotaWarningModal
+            title={quotaWarning.title}
+            message={quotaWarning.message}
+            onClose={() => setQuotaWarning(null)}
           />
         )}
       </>
