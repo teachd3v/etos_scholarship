@@ -199,6 +199,36 @@ export function PendaftarPanel({ mobile, adminCampus }) {
             action={confirmAction.status}
             onCancel={() => setConfirmAction(null)}
             onConfirm={() => {
+              const applicant = submissions.find(s => s._idx === confirmAction.id)
+              if (applicant) {
+                const campusName = (applicant.province || '').trim().toUpperCase()
+                if (confirmAction.status === 'approved') {
+                  const approvedCount = submissions.filter(s => 
+                    s.is_submitted === true &&
+                    (s.province || '').trim().toUpperCase() === campusName &&
+                    (s.status === 'approved' || s.status === 'Lolos Admin')
+                  ).length
+                  const isAlreadyApproved = applicant.status === 'approved' || applicant.status === 'Lolos Admin'
+                  if (!isAlreadyApproved && approvedCount >= 20) {
+                    alert(`🚨 Kuota "Lolos Admin" untuk ${applicant.province} sudah terpenuhi (Maksimal 20 orang). Anda tidak dapat meloloskan pendaftar lagi untuk kampus ini.`)
+                    setConfirmAction(null)
+                    return
+                  }
+                } else if (confirmAction.status === 'waiting') {
+                  const waitingCount = submissions.filter(s => 
+                    s.is_submitted === true &&
+                    (s.province || '').trim().toUpperCase() === campusName &&
+                    (s.status === 'waiting' || s.status === 'Waiting List')
+                  ).length
+                  const isAlreadyWaiting = applicant.status === 'waiting' || applicant.status === 'Waiting List'
+                  if (!isAlreadyWaiting && waitingCount >= 15) {
+                    alert(`🚨 Kuota "Waiting List" untuk ${applicant.province} sudah terpenuhi (Maksimal 15 orang). Anda tidak dapat memasukkan pendaftar lagi ke waiting list untuk kampus ini.`)
+                    setConfirmAction(null)
+                    return
+                  }
+                }
+              }
+
               updateStatus(confirmAction.id, confirmAction.status)
               setStatusToast({ type: confirmAction.status })
               setConfirmAction(null)
