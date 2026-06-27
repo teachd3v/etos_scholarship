@@ -2,14 +2,14 @@ import React from 'react'
 import { supabase } from '../lib/supabase.js'
 import { getSignedUrls } from '../lib/storage.js'
 import { fetchVerificationItems, fetchVerificationResults, saveVerificationResult } from '../lib/verification.js'
-import { ICheck, IX, IAlert, IChevronLeft } from '../Icons.jsx'
+import { ICheck, IX, IAlert, IChevronLeft, IEdit } from '../Icons.jsx'
 import { GlassCard, Button } from '../Primitives.jsx'
 import { STATUS_LABELS, DOC_TYPE_TO_SUB_FIELD, formatRp } from './adminUtils.js'
 import { StatusPill, PriorityPill, SectionCard } from './components.jsx'
 import { VerifyBlock } from './VerifyBlock.jsx'
 import { useFormConfig } from '../lib/FormConfigContext.jsx'
 
-export function AdminDetailPage({ submission: initialSubmission, onBack, setConfirmAction, mobile, statusToast }) {
+export function AdminDetailPage({ submission: initialSubmission, onBack, setConfirmAction, mobile, statusToast, adminCampus }) {
   const [submission, setSubmission] = React.useState(initialSubmission);
   React.useEffect(() => {
     setSubmission(prev => ({ ...prev, status: initialSubmission.status }));
@@ -19,6 +19,67 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
   const [verifItems, setVerifItems] = React.useState([]);
   const [verif, setVerif] = React.useState({ checks: {}, notes: {} })
   const saveTimer = React.useRef({})
+
+  const [isEditingIncome, setIsEditingIncome] = React.useState(false);
+  const [editFather, setEditFather] = React.useState('');
+  const [editMother, setEditMother] = React.useState('');
+  const [editGuardian, setEditGuardian] = React.useState('');
+  const [isSavingIncome, setIsSavingIncome] = React.useState(false);
+
+  const handleStartEdit = () => {
+    setEditFather(submission.fatherIncomeAmount || '0');
+    setEditMother(submission.motherIncomeAmount || '0');
+    setEditGuardian(submission.guardianIncomeAmount || '0');
+    setIsEditingIncome(true);
+  };
+
+  const handleSaveIncome = async () => {
+    setIsSavingIncome(true);
+    try {
+      const fInc = Math.max(0, parseInt(editFather) || 0);
+      const mInc = Math.max(0, parseInt(editMother) || 0);
+      const gInc = Math.max(0, parseInt(editGuardian) || 0);
+
+      const totalIncome = fInc + mInc + gInc;
+      const totalHK = Number(submission.totalHadKifayah) || 0;
+      const hkGap = totalHK - totalIncome;
+
+      let hkPriority = 'MAMPU';
+      if (hkGap > 2500000) hkPriority = 'PRIORITAS 1';
+      else if (hkGap >= 1000000) hkPriority = 'PRIORITAS 2';
+      else if (hkGap > 0) hkPriority = 'PRIORITAS 3';
+
+      const { error } = await supabase
+        .from('applicants')
+        .update({
+          father_income_amount: fInc,
+          mother_income_amount: mInc,
+          guardian_income_amount: gInc,
+          total_income: totalIncome,
+          hk_gap: hkGap,
+          hk_priority: hkPriority
+        })
+        .eq('id', submission.id);
+
+      if (error) throw error;
+
+      setSubmission(prev => ({
+        ...prev,
+        fatherIncomeAmount: fInc,
+        motherIncomeAmount: mInc,
+        guardianIncomeAmount: gInc,
+        totalIncome: totalIncome,
+        hkGap: hkGap,
+        hkPriority: hkPriority
+      }));
+
+      setIsEditingIncome(false);
+    } catch (err) {
+      alert('Gagal menyimpan perubahan pendapatan: ' + err.message);
+    } finally {
+      setIsSavingIncome(false);
+    }
+  };
 
   const { config } = useFormConfig()
   const timeline = config?.timeline
@@ -386,16 +447,85 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
         {renderVerifyBlock('data_keluarga')}
       </SectionCard>
 
-      {/* ── Kondisi Ekonomi ── */}
-      <SectionCard title="Kondisi Ekonomi">
+      <SectionCard 
+        title="Kondisi Ekonomi"
+        action={(!adminCampus && !isEditingIncome) && (
+          <Button variant="outline-tosca" size="sm" onClick={handleStartEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', height: 'auto' }}>
+            <IEdit size={14} /> Ubah Nominal
+          </Button>
+        )}
+      >
         <div className="kv-grid">
           {kv('Penanggung kehidupan',  submission.mainProvider)}
-          {kv('Pendapatan ayah/bulan', formatRp(submission.fatherIncomeAmount))}
-          {kv('Pendapatan ibu/bulan',  formatRp(submission.motherIncomeAmount))}
-          {kv('Pendapatan wali/bulan', formatRp(submission.guardianIncomeAmount))}
+          
+          {isEditingIncome ? (
+            <div className="kv">
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-500)', textTransform: 'uppercase', display: 'block', marginBottom: 6, letterSpacing: '0.05em' }}>Pendapatan Ayah/bulan</label>
+              <input
+                type="number"
+                value={editFather}
+                onChange={e => setEditFather(e.target.value)}
+                style={{
+                  width: '100%', padding: '6px 12px', fontSize: 13, borderRadius: 8,
+                  border: '1px solid var(--ink-300)', background: 'var(--surface)', color: 'var(--ink-900)',
+                  outline: 'none', height: 36
+                }}
+              />
+            </div>
+          ) : (
+            kv('Pendapatan ayah/bulan', formatRp(submission.fatherIncomeAmount))
+          )}
+
+          {isEditingIncome ? (
+            <div className="kv">
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-500)', textTransform: 'uppercase', display: 'block', marginBottom: 6, letterSpacing: '0.05em' }}>Pendapatan Ibu/bulan</label>
+              <input
+                type="number"
+                value={editMother}
+                onChange={e => setEditMother(e.target.value)}
+                style={{
+                  width: '100%', padding: '6px 12px', fontSize: 13, borderRadius: 8,
+                  border: '1px solid var(--ink-300)', background: 'var(--surface)', color: 'var(--ink-900)',
+                  outline: 'none', height: 36
+                }}
+              />
+            </div>
+          ) : (
+            kv('Pendapatan ibu/bulan',  formatRp(submission.motherIncomeAmount))
+          )}
+
+          {isEditingIncome ? (
+            <div className="kv">
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-500)', textTransform: 'uppercase', display: 'block', marginBottom: 6, letterSpacing: '0.05em' }}>Pendapatan Wali/bulan</label>
+              <input
+                type="number"
+                value={editGuardian}
+                onChange={e => setEditGuardian(e.target.value)}
+                style={{
+                  width: '100%', padding: '6px 12px', fontSize: 13, borderRadius: 8,
+                  border: '1px solid var(--ink-300)', background: 'var(--surface)', color: 'var(--ink-900)',
+                  outline: 'none', height: 36
+                }}
+              />
+            </div>
+          ) : (
+            kv('Pendapatan wali/bulan', formatRp(submission.guardianIncomeAmount))
+          )}
+
           {kv('Status rumah',   submission.houseStatus)}
           {kv('Daya listrik',   submission.electricPower)}
         </div>
+
+        {isEditingIncome && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--ink-100)' }}>
+            <Button variant="ghost" size="sm" onClick={() => setIsEditingIncome(false)} disabled={isSavingIncome}>
+              Batal
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleSaveIncome} disabled={isSavingIncome} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {isSavingIncome ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </Button>
+          </div>
+        )}
 
         {/* Komposisi tanggungan */}
         <div style={{ marginTop: 14, padding: '12px 14px', background: 'var(--ink-50)', borderRadius: 10, border: '1px solid var(--ink-100)' }}>

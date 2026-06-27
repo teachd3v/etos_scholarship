@@ -85,10 +85,13 @@ export function ActionConfirmModal({ action, onConfirm, onCancel, mobile }) {
   )
 }
 
-export function SectionCard({ title, children, padding = 20 }) {
+export function SectionCard({ title, action, children, padding = 20 }) {
   return (
     <GlassCard style={{ padding, marginBottom: 16 }}>
-      <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 14 }}>{title}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 14 }}>{title}</div>
+        {action && <div>{action}</div>}
+      </div>
       {children}
     </GlassCard>
   );

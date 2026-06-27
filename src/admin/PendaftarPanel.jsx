@@ -194,6 +194,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
           setConfirmAction={setConfirmAction}
           mobile={mobile}
           statusToast={statusToast}
+          adminCampus={adminCampus}
         />
         {confirmAction && (
           <ActionConfirmModal
