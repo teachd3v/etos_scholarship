@@ -420,13 +420,13 @@ export function useApplicant({ session, enabled = true }) {
       .then(([res, configRes]) => {
         if (cancelled) return
         const timeline = configRes?.data?.value || {}
-        const isPastVerificationEnd = timeline.verification_end && new Date() > new Date(timeline.verification_end)
+        const isPastAnnouncement = timeline.announcement_date && new Date() > new Date(timeline.announcement_date)
 
         if (res) {
           setId(res.applicantId)
           let finalForm = { ...BLANK_FORM, ...res.form }
-          // If verification has ended, unverified applicants are automatically rejected
-          if (isPastVerificationEnd && finalForm.is_submitted && (finalForm.status === 'submitted' || finalForm.status === 'pending' || !finalForm.status)) {
+          // If announcement period has arrived, unverified applicants are automatically rejected
+          if (isPastAnnouncement && finalForm.is_submitted && (finalForm.status === 'submitted' || finalForm.status === 'pending' || !finalForm.status)) {
             finalForm.status = 'rejected'
           }
           setForm(finalForm)

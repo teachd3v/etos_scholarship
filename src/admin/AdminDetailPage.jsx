@@ -88,7 +88,7 @@ export function AdminDetailPage({ submission: initialSubmission, onBack, setConf
     if (!timeline) return false
     const now = new Date()
     const start = timeline.verification_start ? new Date(timeline.verification_start) : null
-    const end = timeline.verification_end ? new Date(timeline.verification_end) : null
+    const end = timeline.announcement_date ? new Date(timeline.announcement_date) : null
     return !!(start && end && now >= start && now < end)
   }, [timeline])
 

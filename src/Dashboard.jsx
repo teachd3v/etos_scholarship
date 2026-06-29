@@ -184,10 +184,10 @@ export function Dashboard({ form, onContinue, onJumpStep, mobile, currentPeriod,
   const isAnnouncement = currentPeriod === 'ANNOUNCEMENT'
 
   const timeline = cfg?.timeline || {}
-  const isPastVerificationEnd = timeline.verification_end && new Date() > new Date(timeline.verification_end)
+  const isPastAnnouncement = timeline.announcement_date && new Date() > new Date(timeline.announcement_date)
 
-  // Determine display status (auto-rejected if past verification end and not explicitly approved)
-  const displayStatus = (isSubmitted && isPastVerificationEnd && (form.status === 'submitted' || form.status === 'pending' || !form.status))
+  // Determine display status (auto-rejected if past announcement and not explicitly approved)
+  const displayStatus = (isSubmitted && isPastAnnouncement && (form.status === 'submitted' || form.status === 'pending' || !form.status))
     ? 'rejected'
     : form.status
 

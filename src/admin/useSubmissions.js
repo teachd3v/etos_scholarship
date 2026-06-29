@@ -17,7 +17,7 @@ export function useSubmissions() {
         .maybeSingle()
       
       const timeline = configRow?.value || {}
-      const isPastVerificationEnd = timeline.verification_end && new Date() > new Date(timeline.verification_end)
+      const isPastAnnouncement = timeline.announcement_date && new Date() > new Date(timeline.announcement_date)
 
       let allRows = []
       let page = 0
@@ -52,8 +52,8 @@ export function useSubmissions() {
       // Fase 2 P1: Lazy-load detail data. We don't fetch achievements, orgs, docs here anymore.
       const mapped = submittedRows.map(r => {
         const sub = mapApplicantRowToSubmission(r, [], [], [])
-        // If verification period has ended and applicant is not approved/rejected, they are automatically rejected
-        if (isPastVerificationEnd && sub.is_submitted && (sub.status === 'submitted' || sub.status === 'pending')) {
+        // If announcement period has arrived and applicant is not approved/rejected/waiting, they are automatically rejected
+        if (isPastAnnouncement && sub.is_submitted && (sub.status === 'submitted' || sub.status === 'pending')) {
           sub.status = 'rejected'
         }
         return sub
