@@ -18,12 +18,15 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   const [statusToast, setStatusToast] = React.useState(null)
   const itemsPerPage = 100
 
-  // Export approved submissions to CSV/Excel format
+  // Export submissions to CSV/Excel format
   const handleExportExcel = () => {
-    const approvedSubmissions = campusSubmissions.filter(s => s.status === 'approved' || s.status === 'Lolos Admin');
+    const isLolos = activeTab === 'LOLOS ADMIN';
+    const targets = isLolos
+      ? campusSubmissions.filter(s => s.status === 'approved' || s.status === 'Lolos Admin')
+      : campusSubmissions.filter(s => s.status === 'waiting' || s.status === 'Waiting List');
     
-    if (approvedSubmissions.length === 0) {
-      alert('Tidak ada data pendaftar yang Lolos Admin untuk diexport.');
+    if (targets.length === 0) {
+      alert(`Tidak ada data pendaftar yang ${isLolos ? 'Lolos Admin' : 'Waiting List'} untuk diexport.`);
       return;
     }
 
@@ -44,7 +47,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       'Status'
     ];
 
-    const rows = approvedSubmissions.map(s => [
+    const rows = targets.map(s => [
       s.registrationNumber || '',
       s.fullName || '',
       `="${s.nik || ''}"`, // Force text format in Excel to prevent truncation of leading zeros
@@ -58,7 +61,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       s.skorOrganisasi ?? 0,
       s.grandScore ?? 0,
       s.hkPriority || '—',
-      'LOLOS ADMIN'
+      isLolos ? 'LOLOS ADMIN' : 'WAITING LIST'
     ]);
 
     const csvContent = 'sep=,\n' + [headers.join(','), ...rows.map(r => r.map(val => {
@@ -72,7 +75,8 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const filename = `Pendaftar_Lolos_Admin_${adminCampus ? adminCampus.replace(/\s+/g, '_') : 'Nasional'}_${new Date().toISOString().split('T')[0]}.csv`;
+    const labelFile = isLolos ? 'Lolos_Admin' : 'Waiting_List';
+    const filename = `Pendaftar_${labelFile}_${adminCampus ? adminCampus.replace(/\s+/g, '_') : 'Nasional'}_${new Date().toISOString().split('T')[0]}.csv`;
     
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
@@ -326,7 +330,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
             color: 'var(--ink-900)', outline: 'none',
           }}
         />
-        {activeTab === 'LOLOS ADMIN' && (
+        {(activeTab === 'LOLOS ADMIN' || activeTab === 'WAITING LIST') && (
           <Button variant="primary" size="md" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             📥 Export Excel
           </Button>
