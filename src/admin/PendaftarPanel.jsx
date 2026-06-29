@@ -1,7 +1,7 @@
 import React from 'react'
 import { IAlert } from '../Icons.jsx'
 import { GlassCard, Button } from '../Primitives.jsx'
-import { STATUS_LABELS, STATUS_TABS, CAMPUS_TABS, TAB_FILTER, PRIORITY_ORDER } from './adminUtils.js'
+import { STATUS_LABELS, STATUS_TABS, CAMPUS_TABS, TAB_FILTER, PRIORITY_ORDER, getLolosQuota } from './adminUtils.js'
 import { useSubmissions } from './useSubmissions.js'
 import { StatusPill, PriorityPill, ActionConfirmModal, QuotaWarningModal } from './components.jsx'
 import { AdminDetailPage } from './AdminDetailPage.jsx'
@@ -215,10 +215,11 @@ export function PendaftarPanel({ mobile, adminCampus }) {
                     (s.status === 'approved' || s.status === 'Lolos Admin')
                   ).length
                   const isAlreadyApproved = applicant.status === 'approved' || applicant.status === 'Lolos Admin'
-                  if (!isAlreadyApproved && approvedCount >= 20) {
+                  const maxLolos = getLolosQuota(applicant.province)
+                  if (!isAlreadyApproved && approvedCount >= maxLolos) {
                     setQuotaWarning({
                       title: 'Kuota Lolos Terpenuhi',
-                      message: `Kuota "Lolos Admin" untuk ${applicant.province} sudah terpenuhi (Maksimal 20 orang). Anda tidak dapat meloloskan pendaftar lagi untuk kampus ini.`
+                      message: `Kuota "Lolos Admin" untuk ${applicant.province} sudah terpenuhi (Maksimal ${maxLolos} orang). Anda tidak dapat meloloskan pendaftar lagi untuk kampus ini.`
                     })
                     setConfirmAction(null)
                     return
@@ -298,7 +299,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
           'Ditolak': counts['DITOLAK'] || 0 
         }).map(([k, v]) => {
           const quota = k === 'Lolos' 
-            ? (adminCampus ? 20 : 100) 
+            ? (adminCampus ? getLolosQuota(adminCampus) : 102) 
             : (k === 'Waiting' ? (adminCampus ? 15 : 75) : null);
           const isOverLimit = quota !== null && v > quota;
           return (
@@ -345,7 +346,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
             const isWaitingTab = tab === 'WAITING LIST';
             let tabQuota = '';
             if (isLolosTab) {
-              tabQuota = adminCampus ? '/20' : '/100';
+              tabQuota = adminCampus ? `/${getLolosQuota(adminCampus)}` : '/102';
             } else if (isWaitingTab) {
               tabQuota = adminCampus ? '/15' : '/75';
             }

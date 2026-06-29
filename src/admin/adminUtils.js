@@ -114,3 +114,12 @@ export function mapApplicantRowToSubmission(row, achievements = [], organization
   }
   return sub
 }
+
+export function getLolosQuota(campusName) {
+  if (!campusName) return 20
+  const name = campusName.trim().toUpperCase()
+  if (name === 'UNIVERSITAS TADULAKO') {
+    return 22
+  }
+  return 20
+}
