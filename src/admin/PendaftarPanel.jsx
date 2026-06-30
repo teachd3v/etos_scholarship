@@ -147,7 +147,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   // For other tabs (including campus view), sort by Status (Lolos -> Waiting -> Ditolak -> Submit),
   // then internally by Priority -> Grand Score -> Skor Prestasi -> Skor Organisasi -> submittedAt DESC.
   const sorted = React.useMemo(() => [...filtered].sort((a, b) => {
-    if (activeTab === 'LOLOS ADMIN') {
+    if (activeStatus === 'LOLOS ADMIN') {
       const timeA = a.submittedAtRaw ? new Date(a.submittedAtRaw).getTime() : 0
       const timeB = b.submittedAtRaw ? new Date(b.submittedAtRaw).getTime() : 0
       return timeB - timeA
@@ -187,15 +187,15 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     const timeA = a.submittedAtRaw ? new Date(a.submittedAtRaw).getTime() : 0
     const timeB = b.submittedAtRaw ? new Date(b.submittedAtRaw).getTime() : 0
     return timeB - timeA
-  }), [filtered, activeTab, isCampusTab])
+  }), [filtered, activeStatus, isCampusTab])
 
   const paginated = sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
   const totalPages = Math.ceil(sorted.length / itemsPerPage)
 
-  const counts = React.useMemo(() => [...STATUS_TABS, ...CAMPUS_TABS].reduce((acc, tab) => {
+  const counts = React.useMemo(() => STATUS_TABS.reduce((acc, tab) => {
     acc[tab] = campusSubmissions.filter(s => isMatch(s, tab)).length
     return acc
-  }, {}), [campusSubmissions])
+  }, {}), [campusSubmissions, activeCampus])
 
   if (detailId !== null) {
     const sub = campusSubmissions.find(s => s._idx === detailId)
