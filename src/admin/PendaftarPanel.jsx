@@ -148,12 +148,26 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   }, [campusSubmissions, activeTab, searchQuery])
 
   // Sorting logic: For 'LOLOS ADMIN', sort purely by submission time (newest first).
-  // For other tabs, sort by Priority -> Grand Score -> Skor Prestasi -> Skor Organisasi -> submittedAt DESC.
+  // For other tabs (including campus view), sort by Status (Lolos -> Waiting -> Ditolak -> Submit),
+  // then internally by Priority -> Grand Score -> Skor Prestasi -> Skor Organisasi -> submittedAt DESC.
   const sorted = React.useMemo(() => [...filtered].sort((a, b) => {
     if (activeTab === 'LOLOS ADMIN') {
       const timeA = a.submittedAtRaw ? new Date(a.submittedAtRaw).getTime() : 0
       const timeB = b.submittedAtRaw ? new Date(b.submittedAtRaw).getTime() : 0
       return timeB - timeA
+    }
+
+    if (isCampusTab) {
+      const getStatusWeight = (status) => {
+        const s = (status || '').toLowerCase()
+        if (s === 'approved' || s === 'lolos admin') return 1
+        if (s === 'waiting' || s === 'waiting list') return 2
+        if (s === 'rejected' || s === 'ditolak') return 3
+        return 4 // submitted / pending
+      }
+      const wA = getStatusWeight(a.status)
+      const wB = getStatusWeight(b.status)
+      if (wA !== wB) return wA - wB
     }
 
     // 1. Sort by Priority (1-Mampu)
@@ -177,7 +191,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     const timeA = a.submittedAtRaw ? new Date(a.submittedAtRaw).getTime() : 0
     const timeB = b.submittedAtRaw ? new Date(b.submittedAtRaw).getTime() : 0
     return timeB - timeA
-  }), [filtered, activeTab])
+  }), [filtered, activeTab, isCampusTab])
 
   const paginated = sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
   const totalPages = Math.ceil(sorted.length / itemsPerPage)
