@@ -8,8 +8,9 @@ import { AdminDetailPage } from './AdminDetailPage.jsx'
 
 export function PendaftarPanel({ mobile, adminCampus }) {
   const { submissions, loading, updateStatus } = useSubmissions()
-  const [activeTab, setActiveTab] = React.useState('SEMUA')
-  const isCampusTab = CAMPUS_TABS.includes(activeTab) || !!adminCampus
+  const [activeCampus, setActiveCampus] = React.useState(adminCampus || 'NASIONAL')
+  const [activeStatus, setActiveStatus] = React.useState('SEMUA')
+  const isCampusTab = activeCampus !== 'NASIONAL' || !!adminCampus
   const [detailId, setDetailId] = React.useState(null)
   const [confirmAction, setConfirmAction] = React.useState(null)
   const [quotaWarning, setQuotaWarning] = React.useState(null)
@@ -18,9 +19,23 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   const [statusToast, setStatusToast] = React.useState(null)
   const itemsPerPage = 100
 
+  // Filter submissions by admin's campus if campus scope is set
+  const campusSubmissions = React.useMemo(() => {
+    if (!adminCampus && activeCampus === 'NASIONAL') return submissions
+    const targetCampus = adminCampus || activeCampus
+    // For specific campus, filter out draft submissions (only show submitted)
+    return submissions.filter(s => 
+      (s.province || '').toUpperCase() === targetCampus.toUpperCase() && 
+      s.is_submitted === true
+    )
+  }, [submissions, adminCampus, activeCampus])
+
+  // Reset pagination saat ganti tab
+  React.useEffect(() => { setCurrentPage(1) }, [activeStatus, activeCampus])
+
   // Export submissions to CSV/Excel format
   const handleExportExcel = () => {
-    const isLolos = activeTab === 'LOLOS ADMIN';
+    const isLolos = activeStatus === 'LOLOS ADMIN';
     const targets = isLolos
       ? campusSubmissions.filter(s => s.status === 'approved' || s.status === 'Lolos Admin')
       : campusSubmissions.filter(s => s.status === 'waiting' || s.status === 'Waiting List');
@@ -76,7 +91,8 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const labelFile = isLolos ? 'Lolos_Admin' : 'Waiting_List';
-    const filename = `Pendaftar_${labelFile}_${adminCampus ? adminCampus.replace(/\s+/g, '_') : 'Nasional'}_${new Date().toISOString().split('T')[0]}.csv`;
+    const activeCampusLabel = adminCampus || activeCampus;
+    const filename = `Pendaftar_${labelFile}_${activeCampusLabel ? activeCampusLabel.replace(/\s+/g, '_') : 'Nasional'}_${new Date().toISOString().split('T')[0]}.csv`;
     
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
@@ -86,37 +102,17 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     document.body.removeChild(link);
   };
 
-  // Filter submissions by admin's campus if campus scope is set
-  const campusSubmissions = React.useMemo(() => {
-    if (!adminCampus) return submissions
-    // For campus admins, filter out draft submissions (only show submitted)
-    return submissions.filter(s => 
-      (s.province || '').toUpperCase() === adminCampus.toUpperCase() && 
-      s.is_submitted === true
-    )
-  }, [submissions, adminCampus])
-
-  // Reset pagination saat ganti tab
-  React.useEffect(() => { setCurrentPage(1) }, [activeTab])
-
   const isMatch = (s, tab) => {
     if (!tab) return false
     const cleanTab = tab.trim().toUpperCase()
 
     if (cleanTab === 'SEMUA') {
-      if (adminCampus) {
+      if (adminCampus || activeCampus !== 'NASIONAL') {
         return s.is_submitted === true
       }
       return true
     }
     
-    // Cek apakah tab adalah kampus (tampilkan semua yang berstatus submitted dari kampus tersebut)
-    const isCampus = CAMPUS_TABS.some(c => c.trim().toUpperCase() === cleanTab)
-    if (isCampus) {
-      return (s.province || '').trim().toUpperCase() === cleanTab && 
-             s.is_submitted === true
-    }
-
     const targetKey = TAB_FILTER[tab]
     if (targetKey === undefined) return false
 
@@ -134,7 +130,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
   }
 
   const filtered = React.useMemo(() => {
-    let result = campusSubmissions.filter(s => isMatch(s, activeTab))
+    let result = campusSubmissions.filter(s => isMatch(s, activeStatus))
     // Apply search filter
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toUpperCase()
@@ -145,7 +141,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       )
     }
     return result
-  }, [campusSubmissions, activeTab, searchQuery])
+  }, [campusSubmissions, activeStatus, searchQuery])
 
   // Sorting logic: For 'LOLOS ADMIN', sort purely by submission time (newest first).
   // For other tabs (including campus view), sort by Status (Lolos -> Waiting -> Ditolak -> Submit),
@@ -312,8 +308,8 @@ export function PendaftarPanel({ mobile, adminCampus }) {
           'Ditolak': counts['DITOLAK'] || 0 
         }).map(([k, v]) => {
           const quota = k === 'Lolos' 
-            ? (adminCampus ? getLolosQuota(adminCampus) : 102) 
-            : (k === 'Waiting' ? (adminCampus ? 15 : 75) : null);
+            ? (activeCampus === 'NASIONAL' ? 102 : getLolosQuota(activeCampus)) 
+            : (k === 'Waiting' ? (activeCampus === 'NASIONAL' ? 75 : 15) : null);
           const isOverLimit = quota !== null && v > quota;
           return (
             <div key={k} className="dash-info" style={isOverLimit ? { borderColor: 'var(--danger-400)', background: 'rgba(239,68,68,0.05)' } : {}}>
@@ -344,7 +340,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
             color: 'var(--ink-900)', outline: 'none',
           }}
         />
-        {(activeTab === 'LOLOS ADMIN' || activeTab === 'WAITING LIST') && (
+        {(activeStatus === 'LOLOS ADMIN' || activeStatus === 'WAITING LIST') && (
           <Button variant="primary" size="md" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             📥 Export Excel
           </Button>
@@ -352,42 +348,53 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       </div>
 
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Status Pendaftaran</div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-          {STATUS_TABS.map((tab) => {
-            const isLolosTab = tab === 'LOLOS ADMIN';
-            const isWaitingTab = tab === 'WAITING LIST';
-            let tabQuota = '';
-            if (isLolosTab) {
-              tabQuota = adminCampus ? `/${getLolosQuota(adminCampus)}` : '/102';
-            } else if (isWaitingTab) {
-              tabQuota = adminCampus ? '/15' : '/75';
-            }
-            return (
-              <button key={tab}
-                className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab)}>
-                {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]}{tabQuota})</span>
-              </button>
-            );
-          })}
-        </div>
-
         {!adminCampus && (
-          <>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Per Kampus Tujuan</div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Pilih Kampus Tujuan</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {CAMPUS_TABS.map((tab) => (
-                <button key={tab}
-                  className={`proto-chip ${activeTab === tab ? 'active' : ''}`}
-                  style={{ borderColor: activeTab === tab ? 'var(--tosca-500)' : 'var(--ink-200)' }}
-                  onClick={() => setActiveTab(tab)}>
-                  {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]})</span>
-                </button>
-              ))}
+              {['NASIONAL', ...CAMPUS_TABS].map((camp) => {
+                const campCount = camp === 'NASIONAL'
+                  ? submissions.filter(s => s.is_submitted === true).length
+                  : submissions.filter(s => s.is_submitted === true && (s.province || '').trim().toUpperCase() === camp.trim().toUpperCase()).length;
+                return (
+                  <button key={camp}
+                    className={`proto-chip ${activeCampus === camp ? 'active' : ''}`}
+                    style={{ borderColor: activeCampus === camp ? 'var(--tosca-500)' : 'var(--ink-200)' }}
+                    onClick={() => { setActiveCampus(camp); setActiveStatus('SEMUA'); setCurrentPage(1); }}>
+                    {camp} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({campCount})</span>
+                  </button>
+                );
+              })}
             </div>
-          </>
+          </div>
         )}
+
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-400)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>
+            Status Pendaftaran {activeCampus !== 'NASIONAL' && `(${activeCampus})`}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {STATUS_TABS.map((tab) => {
+              const isLolosTab = tab === 'LOLOS ADMIN';
+              const isWaitingTab = tab === 'WAITING LIST';
+              let tabQuota = '';
+              if (isLolosTab) {
+                const quotaVal = activeCampus === 'NASIONAL' ? 102 : getLolosQuota(activeCampus);
+                tabQuota = `/${quotaVal}`;
+              } else if (isWaitingTab) {
+                const quotaVal = activeCampus === 'NASIONAL' ? 75 : 15;
+                tabQuota = `/${quotaVal}`;
+              }
+              return (
+                <button key={tab}
+                  className={`proto-chip ${activeStatus === tab ? 'active' : ''}`}
+                  onClick={() => { setActiveStatus(tab); setCurrentPage(1); }}>
+                  {tab} <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>({counts[tab]}{tabQuota})</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {paginated.length === 0 ? (
