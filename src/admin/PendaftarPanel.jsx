@@ -110,12 +110,11 @@ export function PendaftarPanel({ mobile, adminCampus }) {
       return true
     }
     
-    // Cek apakah tab adalah kampus (hanya tampilkan yang berstatus 'submitted' / belum diproses)
+    // Cek apakah tab adalah kampus (tampilkan semua yang berstatus submitted dari kampus tersebut)
     const isCampus = CAMPUS_TABS.some(c => c.trim().toUpperCase() === cleanTab)
     if (isCampus) {
       return (s.province || '').trim().toUpperCase() === cleanTab && 
-             s.is_submitted === true && 
-             (s.status || 'submitted').toLowerCase() === 'submitted'
+             s.is_submitted === true
     }
 
     const targetKey = TAB_FILTER[tab]
