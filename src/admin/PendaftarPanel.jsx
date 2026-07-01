@@ -48,6 +48,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     const headers = [
       'No. Registrasi',
       'Nama Lengkap',
+      'Jenis Kelamin',
       'NIK',
       'No. KK',
       'Email',
@@ -65,6 +66,7 @@ export function PendaftarPanel({ mobile, adminCampus }) {
     const rows = targets.map(s => [
       s.registrationNumber || '',
       s.fullName || '',
+      s.gender || '',
       `="${s.nik || ''}"`, // Force text format in Excel to prevent truncation of leading zeros
       `="${s.noKK || ''}"`,
       s.email || '',
