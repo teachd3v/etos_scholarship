@@ -7,11 +7,16 @@ export const supabase = {
     getUser: async () => ({ data: { user: null }, error: null }),
     signInWithPassword: async () => ({ data: null, error: new Error('Supabase telah dinonaktifkan.') }),
     signOut: async () => ({ error: null }),
-    onAuthStateChange: (cb) => {
-      // Return safe unsubscribe
+    onAuthStateChange: () => {
       return { data: { subscription: { unsubscribe: () => {} } } }
     },
   },
+  channel: () => ({
+    on: function () { return this },
+    subscribe: function () { return this },
+    unsubscribe: function () { return this },
+  }),
+  removeChannel: async () => {},
   from: () => ({
     select: () => ({
       eq: () => ({
