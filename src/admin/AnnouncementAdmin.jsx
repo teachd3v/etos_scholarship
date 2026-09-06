@@ -97,8 +97,17 @@ export function AnnouncementAdmin() {
   // ════════════════════════════════════════════════════════════════
   if (!isLoggedIn) {
     return (
-      <div className="auth-split" style={{ minHeight: '100vh', background: 'var(--ink-950, #0a0f1d)' }}>
-        <div className="auth-hero scene-bg" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{
+        minHeight: '100vh',
+        width: '100%',
+        background: 'linear-gradient(145deg, #090d16 0%, #0f172a 50%, #032b30 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        boxSizing: 'border-box',
+      }}>
+        <div style={{ maxWidth: 420, width: '100%' }}>
           <GlassCard style={{
             maxWidth: 420,
             width: '100%',
