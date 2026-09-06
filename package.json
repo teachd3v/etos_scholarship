@@ -13,12 +13,18 @@
     "sb:push": "supabase db push",
     "sb:pull": "supabase db pull",
     "sb:diff": "supabase db diff",
-    "sb:status": "supabase status"
+    "sb:status": "supabase status",
+    "backup:excel": "node scripts/backup/export_excel.js",
+    "backup:docs": "node scripts/backup/download_documents.js",
+    "backup:verify": "node scripts/backup/verify_backup.js",
+    "backup:clean": "node scripts/backup/cleanup_storage.js",
+    "backup:clean:execute": "node scripts/backup/cleanup_storage.js --execute"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",
     "csv-parser": "^3.2.1",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.12.4"

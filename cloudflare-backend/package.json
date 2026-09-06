@@ -1,0 +1,15 @@
+{
+  "name": "etos-announcement-backend",
+  "version": "1.0.0",
+  "description": "Backend Cloudflare Worker + D1 untuk Portal Pengumuman Beasiswa Etos ID",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "d1:create": "wrangler d1 create etos-d1",
+    "d1:init": "wrangler d1 execute etos-d1 --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}

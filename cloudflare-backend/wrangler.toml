@@ -1,0 +1,9 @@
+name = "etos-announcement-api"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "etos-d1"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"

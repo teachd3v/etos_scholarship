@@ -37,4 +37,5 @@ supabase/seed.sql
 # Local data and scripts
 scripts/
 *.csv
+backup-data/
 
