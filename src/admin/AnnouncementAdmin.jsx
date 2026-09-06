@@ -18,11 +18,7 @@ export function AnnouncementAdmin() {
   // Config state
   const [config, setConfig] = React.useState({
     announcementDate: '2026-09-15T10:00:00+07:00',
-    title: 'Pengumuman Akhir Beasiswa Etos ID 2026',
-    subtitle: 'Proses Penetapan Akhir Surat Keputusan (SK) Penerima Beasiswa Sedang Berlangsung',
-    message: 'Terima kasih atas partisipasi dan perjuangan seluruh calon peserta seleksi Beasiswa Etos ID 2026. Saat ini Tim Seleksi Pusat sedang merampungkan dan mengesahkan dokumen Surat Keputusan (SK) resmi penerima beasiswa.',
     skDocumentUrl: '',
-    skDocumentTitle: 'SK_Kelulusan_Penerima_Beasiswa_Etos_ID_2026.pdf',
     isPublished: false,
   })
   const [loadingConfig, setLoadingConfig] = React.useState(true)
@@ -348,7 +344,7 @@ export function AnnouncementAdmin() {
             Konfigurasi Jadwal & Dokumen SK
           </h1>
           <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-            Kelola hitung mundur pengumuman publik, pesan pengantar resmi, dan dokumen Surat Keputusan (SK) kelulusan.
+            Kelola mode rilis publik (hitung mundur / buka langsung), target tanggal & jam pengumuman, dan tautan unduh dokumen Surat Keputusan (SK) resmi.
           </p>
         </div>
 
@@ -544,91 +540,6 @@ export function AnnouncementAdmin() {
                   <span style={{ fontSize: 11, color: '#64748b', marginTop: 6, display: 'block' }}>
                     Pastikan tautan Google Drive disetel ke "Siapa saja yang memiliki link dapat melihat".
                   </span>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                    Nama Dokumen yang Ditampilkan:
-                  </label>
-                  <input
-                    type="text"
-                    value={config.skDocumentTitle || ''}
-                    onChange={(e) => setConfig(prev => ({ ...prev, skDocumentTitle: e.target.value }))}
-                    placeholder="Contoh: SK Penetapan Penerima Beasiswa Etos ID 2026.pdf"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: 14,
-                      background: '#f8fafc',
-                      border: '1px solid #cbd5e1',
-                      color: '#0f172a',
-                      fontSize: 14,
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* KARTU 4: TEKS PENGANTAR RESMI */}
-            <div style={{
-              padding: '28px',
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 24,
-              boxShadow: '0 10px 30px -5px rgba(15, 23, 42, 0.04)',
-            }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 16px', color: '#0f172a' }}>
-                4. Teks & Pesan Resmi Tim Seleksi
-              </h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                    Judul Pengumuman:
-                  </label>
-                  <input
-                    type="text"
-                    value={config.title || ''}
-                    onChange={(e) => setConfig(prev => ({ ...prev, title: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: 14,
-                      background: '#f8fafc',
-                      border: '1px solid #cbd5e1',
-                      color: '#0f172a',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                    Pesan Khusus untuk Calon Penerima Beasiswa:
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={config.message || ''}
-                    onChange={(e) => setConfig(prev => ({ ...prev, message: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: 14,
-                      background: '#f8fafc',
-                      border: '1px solid #cbd5e1',
-                      color: '#0f172a',
-                      fontSize: 14,
-                      outline: 'none',
-                      resize: 'vertical',
-                      boxSizing: 'border-box',
-                      lineHeight: 1.6,
-                    }}
-                  />
                 </div>
               </div>
             </div>
