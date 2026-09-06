@@ -18,7 +18,7 @@ export function AnnouncementAdmin() {
   // Config state
   const [config, setConfig] = React.useState({
     announcementDate: '2026-09-15T10:00:00+07:00',
-    title: 'Pengumuman Kelulusan Seleksi Beasiswa Etos ID 2026',
+    title: 'Pengumuman Akhir Kelulusan Beasiswa Etos ID 2026',
     subtitle: 'Proses Penetapan Akhir Surat Keputusan (SK) Penerima Beasiswa Sedang Berlangsung',
     message: 'Terima kasih atas partisipasi dan perjuangan seluruh calon peserta seleksi Beasiswa Etos ID 2026. Saat ini Tim Seleksi Pusat sedang merampungkan dan mengesahkan dokumen Surat Keputusan (SK) resmi penerima beasiswa.',
     skDocumentUrl: '',
