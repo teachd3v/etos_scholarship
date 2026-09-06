@@ -292,7 +292,7 @@ export function AnnouncementCountdown() {
             
             {/* Minimalist Bold Heading */}
             <h1 className="portal-title">
-              Pengumuman Akhir Kelulusan<br />
+              Pengumuman Akhir<br />
               <span style={{ color: '#0d9488' }}>Beasiswa Etos ID 2026</span>
             </h1>
 

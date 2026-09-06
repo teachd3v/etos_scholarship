@@ -3,7 +3,7 @@
 
 export const DEFAULT_ANNOUNCEMENT_CONFIG = {
   announcementDate: '2026-09-15T10:00:00+07:00', // Default: 15 September 2026 10:00 WIB
-  title: 'Pengumuman Akhir Kelulusan Beasiswa Etos ID 2026',
+  title: 'Pengumuman Akhir Beasiswa Etos ID 2026',
   subtitle: 'Proses Penetapan Akhir Surat Keputusan (SK) Penerima Beasiswa Sedang Berlangsung',
   message: 'Terima kasih atas partisipasi dan perjuangan seluruh calon peserta seleksi Beasiswa Etos ID 2026. Saat ini Tim Seleksi Pusat sedang merampungkan dan mengesahkan dokumen Surat Keputusan (SK) resmi penerima beasiswa.',
   skDocumentUrl: 'https://drive.google.com', // Link PDF SK
