@@ -1,5 +1,7 @@
 import React from 'react'
 import { getAnnouncementConfig } from './lib/announcementConfig.js'
+import { RecipientsExplorer } from './components/RecipientsExplorer.jsx'
+import { IFile } from './Icons.jsx'
 
 function useCountdown(targetIso) {
   const [now, setNow] = React.useState(() => Date.now())
@@ -48,23 +50,21 @@ export function AnnouncementCountdown() {
     return () => { active = false }
   }, [])
 
+  const isPreview = typeof window !== 'undefined' && window.location.search.includes('preview=true')
   const { days, hours, minutes, seconds, isOver } = useCountdown(config?.announcementDate)
-  const isAnnounced = (config?.isPublished === true) || (isOver && !loading)
+  const isAnnounced = (config?.isPublished === true) || (isOver && !loading) || isPreview
+
+  const skDownloadUrl = config?.skDocumentUrl || '/SK_Pengumuman_Akhir_Seleksi_Etos_ID_2026.pdf'
 
   return (
-    <div className="portal-viewport">
+    <div className={`portal-viewport ${isAnnounced ? 'is-announced-mode' : 'is-countdown-mode'}`}>
       <style>{`
         * {
           box-sizing: border-box;
         }
-        body, html {
-          margin: 0;
-          padding: 0;
-          height: 100%;
-          overflow: hidden;
-          background: #e9edf3;
-        }
-        .portal-viewport {
+
+        /* ─── COUNTDOWN MODE (FIXED 1-SCREEN) ─── */
+        .is-countdown-mode {
           height: 100vh;
           height: 100dvh;
           width: 100vw;
@@ -76,7 +76,7 @@ export function AnnouncementCountdown() {
           overflow: hidden;
           font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        .portal-card {
+        .is-countdown-mode .portal-card {
           background: #ffffff;
           border-radius: 28px;
           box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.03);
@@ -87,6 +87,39 @@ export function AnnouncementCountdown() {
           display: flex;
           flex-direction: column;
         }
+
+        /* ─── ANNOUNCED MODE (FULL SCROLLABLE EXPLORER) ─── */
+        .is-announced-mode {
+          min-height: 100vh;
+          min-height: 100dvh;
+          width: 100%;
+          background: #f1f5f9;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: clamp(20px, 3.5vw, 40px) 16px 80px;
+          overflow-y: auto;
+          box-sizing: border-box;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .is-announced-mode .portal-card {
+          background: #ffffff;
+          border-radius: 28px;
+          box-shadow: 0 20px 50px -15px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.03);
+          width: 100%;
+          max-width: 1100px;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .is-announced-mode .explorer-wrapper {
+          width: 100%;
+          max-width: 1100px;
+          box-sizing: border-box;
+        }
+
+        /* Timer Blocks */
         .timer-container {
           display: inline-flex;
           align-items: center;
@@ -130,11 +163,16 @@ export function AnnouncementCountdown() {
         @media (min-width: 769px) {
           .portal-card {
             padding: 36px 48px;
-            max-height: calc(100vh - 36px);
             justify-content: center;
+          }
+          .is-countdown-mode .portal-card {
+            max-height: calc(100vh - 36px);
           }
           .portal-header {
             margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
           }
           .portal-header img {
             height: 40px;
@@ -143,7 +181,7 @@ export function AnnouncementCountdown() {
           }
           .portal-grid {
             display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
+            grid-template-columns: 1.2fr 0.8fr;
             align-items: center;
             gap: 36px;
           }
@@ -159,7 +197,7 @@ export function AnnouncementCountdown() {
             color: #0f172a;
             line-height: 1.15;
             letter-spacing: -0.03em;
-            margin: 0 0 20px 0;
+            margin: 0 0 18px 0;
           }
           .portal-visual-col {
             display: flex;
@@ -167,7 +205,7 @@ export function AnnouncementCountdown() {
             justify-content: center;
           }
           .portal-image {
-            max-height: clamp(220px, 34vh, 320px);
+            max-height: clamp(200px, 32vh, 300px);
             width: auto;
             max-width: 100%;
             object-fit: contain;
@@ -184,10 +222,10 @@ export function AnnouncementCountdown() {
 
         /* Mobile Styles */
         @media (max-width: 768px) {
-          .portal-viewport {
+          .is-countdown-mode {
             padding: 12px;
           }
-          .portal-card {
+          .is-countdown-mode .portal-card {
             padding: 18px 16px;
             height: 100%;
             max-height: calc(100dvh - 24px);
@@ -196,8 +234,14 @@ export function AnnouncementCountdown() {
             align-items: center;
             text-align: center;
           }
+          .is-announced-mode .portal-card {
+            padding: 24px 18px;
+            border-radius: 22px;
+            text-align: center;
+            align-items: center;
+          }
           .portal-header {
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             width: 100%;
             display: flex;
             justify-content: center;
@@ -213,19 +257,24 @@ export function AnnouncementCountdown() {
             align-items: center;
             justify-content: center;
             width: 100%;
-            gap: 10px;
-            flex: 1;
+            gap: 12px;
           }
-          .portal-visual-col {
+          .is-countdown-mode .portal-visual-col {
             order: 1;
             display: flex;
             justify-content: center;
             margin: 2px 0 6px 0;
           }
+          .is-announced-mode .portal-visual-col {
+            order: 1;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 8px;
+          }
           .portal-image {
-            max-height: clamp(90px, 17vh, 140px);
+            max-height: clamp(80px, 15vh, 130px);
             width: auto;
-            max-width: 85%;
+            max-width: 80%;
             object-fit: contain;
             filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.06));
           }
@@ -238,7 +287,7 @@ export function AnnouncementCountdown() {
             width: 100%;
           }
           .portal-title {
-            font-size: clamp(17px, 4.8vw, 21px);
+            font-size: clamp(18px, 4.8vw, 22px);
             font-weight: 800;
             color: #0f172a;
             line-height: 1.22;
@@ -272,22 +321,40 @@ export function AnnouncementCountdown() {
         }
       `}</style>
 
-      {/* Floating Minimalist 3D Card */}
+      {/* Floating Minimalist 3D Hero Card */}
       <div className="portal-card">
         
-        {/* Top Header: Logo only */}
+        {/* Top Header: Logo */}
         <div className="portal-header">
           <img 
             src="/logo-landingpage.png" 
             alt="Logo Etos ID" 
             onError={(e) => { e.target.style.display = 'none' }}
           />
+
+          {isPreview && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '4px 12px',
+              borderRadius: 999,
+              background: '#fef3c7',
+              border: '1px solid #fde68a',
+              color: '#92400e',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+            }}>
+              Mode Preview Pengumuman
+            </span>
+          )}
         </div>
 
         {/* Hero Content Grid */}
         <div className="portal-grid">
 
-          {/* Left Column (Desktop) / Bottom Column (Mobile): Heading & Countdown / CTA */}
+          {/* Text Column */}
           <div className="portal-text-col">
             
             {/* Minimalist Bold Heading */}
@@ -312,22 +379,22 @@ export function AnnouncementCountdown() {
                 </p>
               </div>
             ) : (
-              /* FASE 2: TOMBOL UNDUH SK RESMI */
+              /* FASE 2: STATUS PENGUMUMAN DIBUKA & TOMBOL UNDUH SK */
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'inherit' }}>
                 <p style={{
                   fontSize: 'clamp(13px, 1.2vw, 15px)',
                   color: '#475569',
-                  lineHeight: 1.5,
-                  margin: '0 0 18px 0',
+                  lineHeight: 1.6,
+                  margin: '0 0 20px 0',
                   fontWeight: 500,
-                  maxWidth: 460,
+                  maxWidth: 540,
                 }}>
-                  Surat Keputusan (SK) resmi penetapan penerima beasiswa telah resmi diterbitkan oleh Tim Seleksi Pusat.
+                  Selamat kepada <strong>32 Calon Penerima Beasiswa Etos ID Angkatan 2026</strong> yang telah dinyatakan lolos seluruh tahapan seleksi nasional sesuai Surat Keputusan Resmi No. 062/YPUU/SK/IX/2026.
                 </p>
 
-                {config?.skDocumentUrl ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
                   <a
-                    href={config.skDocumentUrl}
+                    href={skDownloadUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ textDecoration: 'none', display: 'inline-block' }}
@@ -337,11 +404,11 @@ export function AnnouncementCountdown() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 10,
-                        padding: '14px 30px',
+                        padding: '14px 28px',
                         borderRadius: 999,
                         background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
                         color: '#ffffff',
-                        fontSize: 'clamp(14px, 1.1vw, 15px)',
+                        fontSize: 'clamp(13.5px, 1.1vw, 15px)',
                         fontWeight: 700,
                         border: 'none',
                         cursor: 'pointer',
@@ -357,30 +424,18 @@ export function AnnouncementCountdown() {
                         e.currentTarget.style.boxShadow = '0 14px 28px -6px rgba(13, 148, 136, 0.45)'
                       }}
                     >
+                      <IFile size={16} />
                       <span>Unduh Dokumen SK Resmi (PDF)</span>
-                      <span style={{ fontSize: 16, fontWeight: 800 }}>→</span>
+                      <span style={{ fontSize: 16, fontWeight: 800 }}>↓</span>
                     </button>
                   </a>
-                ) : (
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '10px 18px',
-                    borderRadius: 14,
-                    background: '#fef3c7',
-                    border: '1px solid #fde68a',
-                    color: '#92400e',
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                  }}>
-                    Dokumen SK sedang dipersiapkan. Mohon tunggu beberapa saat.
-                  </div>
-                )}
+                </div>
               </div>
             )}
 
           </div>
 
-          {/* Right Column (Desktop) / Top Column (Mobile): 3D Visual */}
+          {/* 3D Visual */}
           <div className="portal-visual-col">
             <img 
               src="/graduation_3d.png" 
@@ -395,6 +450,14 @@ export function AnnouncementCountdown() {
         </div>
 
       </div>
+
+      {/* FASE 2 EXTENSION: INTERACTIVE RECIPIENTS EXPLORER */}
+      {isAnnounced && (
+        <div className="explorer-wrapper">
+          <RecipientsExplorer />
+        </div>
+      )}
+
     </div>
   )
 }

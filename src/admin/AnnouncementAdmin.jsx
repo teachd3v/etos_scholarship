@@ -292,6 +292,26 @@ export function AnnouncementAdmin() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <a
+              href="/?preview=true"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                textDecoration: 'none',
+                padding: '8px 16px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#0d9488',
+                background: '#f0fdfa',
+                border: '1px solid #ccfbf1',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#ccfbf1' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdfa' }}
+            >
+              Preview Tabel 32 Peserta ↗
+            </a>
+            <a
               href="/"
               target="_blank"
               rel="noopener noreferrer"
