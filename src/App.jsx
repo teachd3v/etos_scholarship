@@ -11,11 +11,13 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname === '/admin/'
+  const path = window.location.pathname.toLowerCase()
+  const isAdminRoute = path === '/admin' || path === '/admin/'
+  const isBypassRoute = path === '/bypasspengumuman' || path === '/bypasspengumuman/'
 
   if (isAdminRoute) {
     return <AnnouncementAdmin />
   }
 
-  return <AnnouncementCountdown />
+  return <AnnouncementCountdown forceAnnounced={isBypassRoute} />
 }

@@ -35,7 +35,7 @@ function TimerBlock({ value, label }) {
   )
 }
 
-export function AnnouncementCountdown() {
+export function AnnouncementCountdown({ forceAnnounced = false }) {
   const [config, setConfig] = React.useState(null)
   const [loading, setLoading] = React.useState(true)
 
@@ -50,9 +50,10 @@ export function AnnouncementCountdown() {
     return () => { active = false }
   }, [])
 
-  const isPreview = typeof window !== 'undefined' && window.location.search.includes('preview=true')
+  const path = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : ''
+  const isBypass = forceAnnounced || path.startsWith('/bypasspengumuman') || (typeof window !== 'undefined' && window.location.search.includes('preview=true'))
   const { days, hours, minutes, seconds, isOver } = useCountdown(config?.announcementDate)
-  const isAnnounced = (config?.isPublished === true) || (isOver && !loading) || isPreview
+  const isAnnounced = (config?.isPublished === true) || (isOver && !loading) || isBypass
 
   const skDownloadUrl = config?.skDocumentUrl || '/SK_Pengumuman_Akhir_Seleksi_Etos_ID_2026.pdf'
 
@@ -332,21 +333,21 @@ export function AnnouncementCountdown() {
             onError={(e) => { e.target.style.display = 'none' }}
           />
 
-          {isPreview && (
+          {isBypass && !config?.isPublished && !isOver && (
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              padding: '4px 12px',
+              padding: '5px 14px',
               borderRadius: 999,
-              background: '#fef3c7',
-              border: '1px solid #fde68a',
-              color: '#92400e',
-              fontSize: 11,
+              background: '#f0fdfa',
+              border: '1px solid #ccfbf1',
+              color: '#0d9488',
+              fontSize: 11.5,
               fontWeight: 700,
-              letterSpacing: '0.05em',
+              letterSpacing: '0.04em',
               textTransform: 'uppercase',
             }}>
-              Mode Preview Pengumuman
+              Mode Bypass Pengumuman
             </span>
           )}
         </div>
