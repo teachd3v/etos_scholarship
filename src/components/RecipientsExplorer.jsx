@@ -24,10 +24,10 @@ export function RecipientsExplorer() {
     setTimeout(() => setCopiedEmail(null), 2000)
   }
 
-  // Filter logic
+  // Filter and sort logic (A-Z by name)
   const filteredRecipients = React.useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
-    return recipientsData.filter((r) => {
+    const list = recipientsData.filter((r) => {
       const matchCampus =
         selectedCampus === 'Semua Kampus' || r.campus === selectedCampus
 
@@ -41,6 +41,8 @@ export function RecipientsExplorer() {
 
       return matchCampus && matchQuery
     })
+
+    return list.sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }))
   }, [searchQuery, selectedCampus])
 
   // Count per campus
@@ -298,22 +300,38 @@ export function RecipientsExplorer() {
           border: 1px solid #bae6fd;
         }
 
+        .badges-wrap {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+        }
+
         .campus-badge {
-          display: inline-block;
-          font-size: 12px;
+          display: inline-flex;
+          align-items: center;
+          font-size: 11.5px;
           font-weight: 700;
           color: #0d9488;
           background: #f0fdfa;
           border: 1px solid #ccfbf1;
-          padding: 3px 8px;
+          padding: 3px 9px;
           border-radius: 6px;
-          margin-bottom: 3px;
+          margin: 0;
+          line-height: 1.3;
         }
 
-        .prodi-text {
-          font-size: 13px;
-          font-weight: 600;
-          color: #0f172a;
+        .prodi-badge {
+          display: inline-flex;
+          align-items: center;
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #334155;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          padding: 3px 9px;
+          border-radius: 6px;
+          margin: 0;
           line-height: 1.3;
         }
 
@@ -571,12 +589,14 @@ export function RecipientsExplorer() {
 
                       {/* Kampus & Prodi */}
                       <td>
-                        <div>
+                        <div className="badges-wrap">
                           <span className="campus-badge">
                             {r.campus} ({r.city})
                           </span>
+                          <span className="prodi-badge">
+                            {r.studyProgram}
+                          </span>
                         </div>
-                        <div className="prodi-text">{r.studyProgram}</div>
                       </td>
 
                       {/* Email */}
@@ -643,13 +663,13 @@ export function RecipientsExplorer() {
                   </div>
 
                   <div className="recipient-card-body">
-                    <div>
+                    <div className="badges-wrap">
                       <span className="campus-badge" style={{ fontSize: 11 }}>
                         {r.campus} ({r.city})
                       </span>
-                      <div className="prodi-text" style={{ fontSize: 13, marginTop: 2 }}>
+                      <span className="prodi-badge" style={{ fontSize: 11 }}>
                         {r.studyProgram}
-                      </div>
+                      </span>
                     </div>
 
                     {r.email && r.email !== '-' && (
