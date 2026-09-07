@@ -25,11 +25,11 @@ INSERT OR IGNORE INTO announcements (
 ) VALUES (
   'main',
   '2026-09-15T10:00:00+07:00',
-  'Pengumuman Kelulusan Seleksi Beasiswa Etos ID 2026',
+  'Pengumuman Akhir Beasiswa Etos ID 2026',
   'Proses Penetapan Akhir Surat Keputusan (SK) Penerima Beasiswa Sedang Berlangsung',
   'Terima kasih atas partisipasi dan perjuangan seluruh calon peserta seleksi Beasiswa Etos ID 2026. Saat ini Tim Seleksi Pusat sedang merampungkan dan mengesahkan dokumen Surat Keputusan (SK) resmi penerima beasiswa.',
-  'https://drive.google.com',
-  'SK_Kelulusan_Penerima_Beasiswa_Etos_ID_2026.pdf',
+  '',
+  '',
   0,
   datetime('now')
 );

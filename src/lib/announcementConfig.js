@@ -8,8 +8,8 @@ export const DEFAULT_ANNOUNCEMENT_CONFIG = {
   updatedAt: new Date().toISOString(),
 }
 
-// URL Cloudflare Worker API (bisa diset via VITE_CF_API_URL di .env atau Vercel Environment Variables)
-const CF_API_BASE = import.meta.env.VITE_CF_API_URL || ''
+// URL Cloudflare Worker API (bisa dioverride via VITE_CF_API_URL)
+const CF_API_BASE = import.meta.env.VITE_CF_API_URL || 'https://etos-announcement-api.hudamas10.workers.dev'
 
 const LOCAL_STORAGE_KEY = 'etos_announcement_config'
 const AUTH_STORAGE_KEY = 'etos_admin_token'

@@ -6,4 +6,4 @@ compatibility_date = "2024-09-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "etos-d1"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "e0c2b976-7212-4c8c-9e50-93ca5b165f8b"
