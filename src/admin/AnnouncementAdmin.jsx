@@ -523,8 +523,7 @@ export function AnnouncementAdmin() {
                     type="url"
                     value={config.skDocumentUrl || ''}
                     onChange={(e) => setConfig(prev => ({ ...prev, skDocumentUrl: e.target.value }))}
-                    placeholder="https://drive.google.com/... atau tautan berkas PDF"
-                    required
+                    placeholder="https://drive.google.com/... atau tautan berkas PDF (opsional jika belum siap)"
                     style={{
                       width: '100%',
                       padding: '12px 16px',

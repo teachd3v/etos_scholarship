@@ -76,13 +76,17 @@ export async function saveAnnouncementConfig(newConfig, token = null) {
         throw new Error(errJson.error || `HTTP error ${res.status}`)
       }
       const data = await res.json()
+      // Simpan ke local cache hanya jika berhasil sync ke server
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload))
       return data
     } catch (err) {
-      console.warn('Gagal sync ke Cloudflare Worker, tersimpan di lokal:', err)
-      return { success: true, localOnly: true, data: payload }
+      console.error('Gagal sync ke Cloudflare Worker:', err)
+      throw new Error(err.message || 'Gagal menyimpan ke server cloud.')
     }
   }
 
+  // Jika tidak ada backend URL, simpan ke lokal
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload))
   return { success: true, localOnly: true, data: payload }
 }
 

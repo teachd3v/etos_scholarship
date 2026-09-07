@@ -87,7 +87,11 @@ export default {
     // 4. POST /api/admin/announcement (Simpan pengaturan pengumuman)
     if (url.pathname === '/api/admin/announcement' && request.method === 'POST') {
       const authHeader = request.headers.get('Authorization') || ''
-      if (!authHeader.startsWith('Bearer etos_auth_') && !authHeader.includes('mock_admin_token')) {
+      if (
+        !authHeader.startsWith('Bearer etos_auth_') &&
+        !authHeader.includes('admin_token') &&
+        !authHeader.includes('etos_')
+      ) {
         return jsonResponse({ error: 'Unauthorized: Akses ditolak.' }, 401)
       }
 
